@@ -6,7 +6,7 @@ name: 'Build and deploy Python app to Azure Web App: car-companion'
 on:
   push:
     branches:
-    - development
+    - devops
   workflow_dispatch:
 
 jobs:
@@ -21,12 +21,18 @@ jobs:
       with:
         python-version: '3.12'
     
-    - name: Build using AppService-Build
-      uses: azure/appservice-build@v2
-      with:
-        platform: python
-        platform-version: '3.12'
+    - name: Install poetry
+      uses: abatilo/actions-poetry@v2
     
+    - uses: actions/cache@v3
+      name: Define a cache for the virtual environment based on the dependencies lock file
+      with:
+        path: ./.venv
+        key: venv-${{ hashFiles('poetry.lock') }}
+    
+    - name: Install the project dependencies
+      run: poetry install
+
     - name: 'Deploy to Azure Web App'
       uses: azure/webapps-deploy@v2
       with: 
