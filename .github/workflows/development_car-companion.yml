@@ -27,7 +27,7 @@ jobs:
     - name: Install the project dependencies
       run:  |
         cd car_companion
-        poetry install
+        poetry install --no-root
 
     - name: 'Deploy to Azure Web App'
       uses: azure/webapps-deploy@v2
