@@ -6,7 +6,7 @@ name: 'Build and deploy Python app to Azure Web App: car-companion'
 on:
   push:
     branches:
-    - development
+    - devops
   workflow_dispatch:
 
 jobs:
