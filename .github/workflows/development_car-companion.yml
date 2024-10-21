@@ -27,7 +27,7 @@ jobs:
     - name: Make Oryx happy with requirements.txt
       working-directory: ${{ inputs.function_directory }}
       run: |
-        poetry export --without=test --without-hashes --format=requirements.txt > requirements.txt
+        poetry export --without-hashes --format=requirements.txt > requirements.txt
 
     - name: 'Deploy to Azure Web App'
       uses: azure/webapps-deploy@v2
