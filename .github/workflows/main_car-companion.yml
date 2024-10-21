@@ -6,7 +6,7 @@ name: 'Build and deploy Python app to Azure Web App: car-companion'
 on:
   push:
     branches:
-    - development
+    - main
   workflow_dispatch:
 
 jobs:
@@ -32,6 +32,6 @@ jobs:
     - name: 'Deploy to Azure Web App'
       uses: azure/webapps-deploy@v2
       with: 
-        app-name: 'car-companion-dev'
+        app-name: 'car-companion'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_016823c9f8f34f12ae875bbe9836ace4 }}
