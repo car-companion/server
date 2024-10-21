@@ -34,4 +34,4 @@ jobs:
       with: 
         app-name: 'car-companion'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_016823c9f8f34f12ae875bbe9836ace4 }}
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_Main }}
