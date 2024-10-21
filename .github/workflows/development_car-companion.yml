@@ -24,10 +24,10 @@ jobs:
     - name: Install poetry
       uses: abatilo/actions-poetry@v2
     
-    - name: Install the project dependencies
-      run:  |
-        cd car_companion
-        poetry install --no-root
+    - name: Make Oryx happy with requirements.txt
+      working-directory: ${{ inputs.function_directory }}
+      run: |
+        poetry export --without=test --without-hashes --format=requirements.txt > requirements.txt
 
     - name: 'Deploy to Azure Web App'
       uses: azure/webapps-deploy@v2
