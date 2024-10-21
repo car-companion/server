@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure-n6a617wa*#lr-r&9!nqoja1g230bbmmymhb@q@my+f#ub#5q&*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["169.254.129.3", "car-companion.azurewebsites.net"]
+ALLOWED_HOSTS = ["car-companion.azurewebsites.net", "car-companion-dev.azurewebsites.net"]
 
 
 # Application definition
