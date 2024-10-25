@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 import environ
+from django.conf.global_settings import INTERNAL_IPS
 
 env = environ.Env()
 environ.Env.read_env()
@@ -128,3 +129,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Debug toolbar settings
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
