@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "debug_toolbar",
+    "rest_framework",
+    "djoser",
 ]
 
 MIDDLEWARE = [
@@ -96,19 +98,19 @@ DATABASES = {
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    #    Ensures that Passwords must not be too similar to the user's attributes.
+        #    Ensures that Passwords must not be too similar to the user's attributes.
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    #     Ensures that Passwords must be at least 8 characters long.
+        #     Ensures that Passwords must be at least 8 characters long.
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    #     Ensures that Passwords are not common passwords.
+        #     Ensures that Passwords are not common passwords.
     },
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    #     Ensures that Passwords must not only be numeric.
+        #     Ensures that Passwords must not only be numeric.
     },
 ]
 
@@ -138,3 +140,20 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+# Rest framework + Djoser settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('JWT',),
+}
+
+DJOSER = {
+    'SERIALIZERS': {
+        'user_create': 'core.serializers.UserRegistrationSerializer',
+    }
+}
