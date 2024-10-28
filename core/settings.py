@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "rest_framework",
     "djoser",
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -146,6 +147,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 SIMPLE_JWT = {
@@ -156,4 +158,12 @@ DJOSER = {
     'SERIALIZERS': {
         'user_create': 'core.serializers.UserRegistrationSerializer',
     }
+}
+
+# OpenAPI schema generation
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Car Companion API',
+    'DESCRIPTION': 'API for Car Companion project',
+    'VERSION': '1.0.0',
+    # 'SERVE_INCLUDE_SCHEMA': False,
 }
