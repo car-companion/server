@@ -35,12 +35,12 @@ jobs:
         echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> .env
         echo "DEBUG=${{ secrets.DJANGO_DEBUG }}" >> .env
         echo "ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }}" >> .env
-        echo "DB_ENGINE_DEV=${{ secrets.DB_ENGINE_DEV }}" >> .env
-        echo "DB_NAME_DEV=${{ secrets.DB_NAME_DEV }}" >> .env
-        echo "DB_HOST_DEV=${{ secrets.DB_HOST_DEV }}" >> .env
-        echo "DB_PORT_DEV=${{ secrets.DB_PORT_DEV }}" >> .env
-        echo "DB_USER_DEV=${{ secrets.DB_USER_DEV }}" >> .env
-        echo "DB_PASSWORD_DEV=${{ secrets.DB_PASSWORD_DEV }}" >> .env
+        echo "DB_ENGINE=${{ secrets.DB_ENGINE_DEV }}" >> .env
+        echo "DB_NAME=${{ secrets.DB_NAME_DEV }}" >> .env
+        echo "DB_HOST=${{ secrets.DB_HOST_DEV }}" >> .env
+        echo "DB_PORT=${{ secrets.DB_PORT_DEV }}" >> .env
+        echo "DB_USER=${{ secrets.DB_USER_DEV }}" >> .env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_DEV }}" >> .env
 
     - name: 'Deploy to Azure Web App'
       uses: azure/webapps-deploy@v2
