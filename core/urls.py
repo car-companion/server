@@ -16,17 +16,32 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import include
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
+router = DefaultRouter()
+
+# Schema URLs
+schema_patterns = ([
+                       path('', SpectacularAPIView.as_view(), name='schema'),
+                       path('swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema:schema'), name='swagger-ui'),
+                       path('redoc/', SpectacularRedocView.as_view(url_name='schema:schema'), name='redoc'),
+                   ], 'schema')
+
+# Auth URLs
+auth_patterns = ([
+                     path('', include('djoser.urls')),
+                     path('', include('djoser.urls.jwt')),
+                 ], 'auth')
+
 urlpatterns = [
+    path('api/', include([
+        path('', include(router.urls)),
+        path('auth/', include(auth_patterns)),
+        path('schema/', include(schema_patterns)),
+    ])),
     path("admin/", admin.site.urls),
     path("__debug__/", include("debug_toolbar.urls")),
-    path("api/auth/", include("djoser.urls")),
-    path("api/auth/", include("djoser.urls.jwt")),
-    path('health/', include('health_check.urls')),  # Health check endpoint
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('health/', include('health_check.urls')),
 ]
