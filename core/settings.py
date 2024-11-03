@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "debug_toolbar",
     "rest_framework",
+    'django_filters',
     "djoser",
     'drf_spectacular',
     'health_check',
@@ -56,6 +57,7 @@ INSTALLED_APPS = [
     'health_check.cache',
     'health_check.storage',
     'health_check.contrib.migrations',
+    'vehicle'
 ]
 
 MIDDLEWARE = [
