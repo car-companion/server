@@ -56,7 +56,6 @@ INSTALLED_APPS = [
     'health_check.cache',
     'health_check.storage',
     'health_check.contrib.migrations',
-    'core.apps.CoreAppConfig', # Either config itself or appname, but not both
 ]
 
 MIDDLEWARE = [
@@ -178,4 +177,12 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API for Car Companion project',
     'VERSION': '1.0.0',
     # 'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Unfold settings
+UNFOLD = {
+    "SITE_TITLE": "Car Companion",
+    "SITE_HEADER": "Car Companion",
+    "SITE_URL": "/",
+    "SITE_ICON": None,  # Add your icon path if needed
 }
