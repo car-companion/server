@@ -35,3 +35,11 @@ jobs:
         app-name: 'car-companion'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_Main }}
+
+    - name: Run Health Check
+      run: |
+        status_code=$(curl -s -o /dev/null -w "%{http_code}" https://car-companion.azurewebsites.net/health/?format=json)
+        if [ "$status_code" -ne 200 ]; then
+          echo "Health check failed with status $status_code"
+          exit 1
+        fi
