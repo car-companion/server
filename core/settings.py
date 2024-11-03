@@ -37,6 +37,10 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 # Application definition
 
 INSTALLED_APPS = [
+    "unfold",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -173,4 +177,12 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API for Car Companion project',
     'VERSION': '1.0.0',
     # 'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Unfold settings
+UNFOLD = {
+    "SITE_TITLE": "Car Companion",
+    "SITE_HEADER": "Car Companion",
+    "SITE_URL": "/",
+    "SITE_ICON": None,  # Add your icon path if needed
 }
