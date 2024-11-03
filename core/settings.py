@@ -34,9 +34,15 @@ DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
+
 # Application definition
 
 INSTALLED_APPS = [
+    "unfold",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,6 +51,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "debug_toolbar",
     "rest_framework",
+    'django_filters',
     "djoser",
     'drf_spectacular',
     'health_check',
@@ -52,6 +59,7 @@ INSTALLED_APPS = [
     'health_check.cache',
     'health_check.storage',
     'health_check.contrib.migrations',
+    'vehicle'
 ]
 
 MIDDLEWARE = [
@@ -174,4 +182,12 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API for Car Companion project',
     'VERSION': '1.0.0',
     # 'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Unfold settings
+UNFOLD = {
+    "SITE_TITLE": "Car Companion",
+    "SITE_HEADER": "Car Companion",
+    "SITE_URL": "/",
+    "SITE_ICON": None,  # Add your icon path if needed
 }
