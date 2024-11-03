@@ -1,16 +1,19 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: 'Build and deploy Python app to Azure Web App: car-companion'
+name: 'Test, build and deploy Python app to Azure Web App: car-companion'
 
 on:
+  pull_request:
+    branches:
+    - main
   push:
     branches:
     - main
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  test-build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -29,14 +32,26 @@ jobs:
       run: |
         poetry export --without-hashes --format=requirements.txt > requirements.txt
 
-    - name: 'Deploy to Azure Web App'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run tests with coverage
+      run: |
+        coverage run manage.py test
+        coverage report
+
+    - name: Deploy to Azure Web App (only on push, not PR)
+      if: github.event_name != 'pull_request'
       uses: azure/webapps-deploy@v2
       with: 
         app-name: 'car-companion'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_Main }}
 
-    - name: Run Health Check
+    - name: Run Health Check (only on push, not PR)
+      if: github.event_name != 'pull_request'
       run: |
         status_code=$(curl -s -o /dev/null -w "%{http_code}" https://car-companion.azurewebsites.net/health/?format=json)
         if [ "$status_code" -ne 200 ]; then
