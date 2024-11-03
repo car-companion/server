@@ -39,6 +39,15 @@ jobs:
 
     - name: Run tests with coverage
       env:
+        ALLOWED_HOSTS: "127.0.0.1,localhost"
+        CSRF_TRUSTED_ORIGINS: "http://127.0.0.1,http://localhost"
+        DEBUG: "True"
+        DB_ENGINE: "django.db.backends.postgresql"
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_PORT: ${{ secrets.DB_PORT }}
+        DB_USER: ${{ secrets.DB_USER }}
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
       run: |
         coverage run manage.py test
