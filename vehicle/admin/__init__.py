@@ -1,3 +1,4 @@
 from .color import ColorAdmin
+from .manufacturer import ManufacturerAdmin
 
-__all__ = ['ColorAdmin']
+__all__ = ['ColorAdmin', 'ManufacturerAdmin']
