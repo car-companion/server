@@ -6,6 +6,7 @@ from django.core.validators import (
     MaxValueValidator,
     RegexValidator
 )
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from typing import Any
@@ -47,7 +48,11 @@ class Vehicle(models.Model):
         help_text=_("17-character Vehicle Identification Number"),
         error_messages={
             'unique': _("A vehicle with this VIN already exists."),
-            'invalid': _("Enter a valid VIN.")
+            'invalid': _("Enter a valid VIN."),
+            'blank': _("VIN cannot be blank."),
+            'null': _("VIN is required."),
+            'max_length': _("VIN must be exactly 17 characters."),
+            'min_length': _("VIN must be exactly 17 characters.")
         }
     )
 
@@ -64,6 +69,10 @@ class Vehicle(models.Model):
             )
         ],
         help_text=_("Year the vehicle was manufactured"),
+        error_messages={
+            'null': _("Year built is required."),
+            'invalid': _("Enter a valid year.")
+        }
     )
 
     model = models.ForeignKey(
@@ -71,7 +80,11 @@ class Vehicle(models.Model):
         verbose_name=_("Model"),
         on_delete=models.PROTECT,
         related_name='vehicles',
-        help_text=_("Vehicle model")
+        help_text=_("Vehicle model"),
+        error_messages={
+            'null': _("Vehicle model is required."),
+            'invalid': _("Select a valid vehicle model.")
+        }
     )
 
     outer_color = models.ForeignKey(
@@ -79,7 +92,11 @@ class Vehicle(models.Model):
         verbose_name=_("Exterior Color"),
         on_delete=models.PROTECT,
         related_name='vehicle_outer_color',
-        help_text=_("Vehicle exterior color")
+        help_text=_("Vehicle exterior color"),
+        error_messages={
+            'null': _("Exterior color is required."),
+            'invalid': _("Select a valid exterior color.")
+        }
     )
 
     interior_color = models.ForeignKey(
@@ -87,7 +104,11 @@ class Vehicle(models.Model):
         verbose_name=_("Interior Color"),
         on_delete=models.PROTECT,
         related_name='vehicle_interior_color',
-        help_text=_("Vehicle interior color")
+        help_text=_("Vehicle interior color"),
+        error_messages={
+            'null': _("Interior color is required."),
+            'invalid': _("Select a valid interior color.")
+        }
     )
 
     nickname = models.CharField(
@@ -95,7 +116,16 @@ class Vehicle(models.Model):
         max_length=100,
         blank=True,
         null=True,
-        help_text=_("Optional nickname for the vehicle")
+        help_text=_("Optional nickname for the vehicle"),
+        validators=[
+            RegexValidator(
+                regex=r'^[a-zA-Z0-9\s\-]*$',
+                message=_("Nickname can only contain letters, numbers, spaces, and hyphens.")
+            )
+        ],
+        error_messages={
+            'max_length': _("Nickname cannot be longer than 100 characters.")
+        }
     )
 
     class Meta:
@@ -106,36 +136,96 @@ class Vehicle(models.Model):
         indexes = [
             models.Index(fields=['year_built'], name='vehicle_year_idx'),
             models.Index(fields=['model'], name='vehicle_model_idx'),
+            models.Index(fields=['outer_color'], name='vehicle_outer_color_idx'),
+            models.Index(fields=['interior_color'], name='vehicle_interior_color_idx'),
         ]
+
+    def clean(self) -> None:
+        """
+        Perform model-wide validation.
+        Validates:
+        - Year built is valid
+        - VIN format is correct
+        - Colors are different (optional)
+        - Nickname format is valid
+        - Required relationships exist
+        """
+        errors = {}
+
+        # Validate year_built
+        if self.year_built:
+            if self.year_built > get_max_year():
+                errors['year_built'] = _("Year cannot be in the future.")
+            elif self.year_built < self.FIRST_MODEL_YEAR:
+                errors['year_built'] = _(f"Year must be {self.FIRST_MODEL_YEAR} or later.")
+
+        # Validate VIN format and standardization
+        if self.vin:
+            # Convert to uppercase for validation
+            self.vin = self.vin.upper()
+            # Check for invalid characters (I, O, Q)
+            if any(c in self.vin for c in 'IOQ'):
+                errors['vin'] = _("VIN cannot contain letters I, O, or Q.")
+        else:
+            errors['vin'] = _("VIN is required.")
+
+        # Optional: Validate that interior and exterior colors are different
+        if self.interior_color and self.outer_color and self.interior_color == self.outer_color:
+            errors['interior_color'] = _("Interior and exterior colors should be different.")
+
+        # Validate nickname format if provided
+        if self.nickname:
+            self.nickname = self.nickname.strip()
+            if 2 > len(self.nickname) > 0:
+                errors['nickname'] = _("Nickname must be at least 2 characters long if provided.")
+
+            # Check for special characters not caught by the validator
+            if not self.nickname.replace(' ', '').replace('-', '').isalnum():
+                errors['nickname'] = _("Nickname can only contain letters, numbers, spaces, and hyphens.")
+
+        # Validate required relationships
+        if not self.model_id:
+            errors['model'] = _("Vehicle model is required.")
+        if not self.outer_color_id:
+            errors['outer_color'] = _("Exterior color is required.")
+        if not self.interior_color_id:
+            errors['interior_color'] = _("Interior color is required.")
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Custom save method with additional validation.
+        - Performs full model validation
+        - Standardizes VIN format
+        - Standardizes nickname format
+        """
+        # Standardize VIN
+        if self.vin:
+            self.vin = self.vin.upper()
+
+        # Standardize nickname
+        if self.nickname:
+            self.nickname = self.nickname.strip()
+            # Convert multiple spaces to single space
+            self.nickname = ' '.join(self.nickname.split())
+
+        # Perform full validation
+        self.clean()
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         """
         Returns a string representation of the vehicle.
         Format: YYYY Manufacturer Model (VIN)
+        If nickname is set, append it: YYYY Manufacturer Model "Nickname" (VIN)
         """
-        return f"{self.year_built} {self.model.manufacturer} {self.model} ({self.vin})"
-
-    def clean(self) -> None:
-        """
-        Perform model-wide validation.
-        """
-        from django.core.exceptions import ValidationError
-
-        # Ensure year_built is not greater than the current year + 1
-        if self.year_built and self.year_built > get_max_year():
-            raise ValidationError({
-                'year_built': _("Year cannot be in the future.")
-            })
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        """
-        Custom save method with additional validation.
-        """
-        self.clean()
-        # Convert VIN to uppercase
-        if self.vin:
-            self.vin = self.vin.upper()
-        super().save(*args, **kwargs)
+        base = f"{self.year_built} {self.model.manufacturer} {self.model}"
+        if self.nickname:
+            return f'{base} "{self.nickname}" ({self.vin})'
+        return f"{base} ({self.vin})"
 
     @property
     def manufacturer(self):

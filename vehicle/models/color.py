@@ -1,5 +1,7 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+import re
 
 
 class Color(models.Model):
@@ -33,6 +35,22 @@ class Color(models.Model):
         indexes = [
             models.Index(fields=['name'], name='color_name_idx'),
         ]
+
+    def clean(self):
+        """
+        Custom validation for the Color model.
+        Ensures that the name is not null, not empty, and standardized.
+        """
+        if self.name is None:
+            raise ValidationError(_('Color name cannot be null.'))
+        elif not self.name.strip():
+            raise ValidationError(_('Color name cannot be blank.'))
+
+        self.name = re.sub(r'\s+', ' ', self.name.strip()).capitalize()
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         """
