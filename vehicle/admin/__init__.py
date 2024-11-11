@@ -3,7 +3,8 @@ from .manufacturer import ManufacturerAdmin
 from .vehicle_model import VehicleModelAdmin
 from .vehicle import VehicleAdmin
 from .component import ComponentTypeAdmin
-from .user_and_groups import UserAdmin, GroupAdmin
+from .user import UserAdmin
+from .group import GroupAdmin
 
 __all__ = [
     'UserAdmin',
