@@ -146,7 +146,6 @@ class Vehicle(models.Model):
         Validates:
         - Year built is valid
         - VIN format is correct
-        - Colors are different (optional)
         - Nickname format is valid
         - Required relationships exist
         """
@@ -168,10 +167,6 @@ class Vehicle(models.Model):
                 errors['vin'] = _("VIN cannot contain letters I, O, or Q.")
         else:
             errors['vin'] = _("VIN is required.")
-
-        # Optional: Validate that interior and exterior colors are different
-        if self.interior_color and self.outer_color and self.interior_color == self.outer_color:
-            errors['interior_color'] = _("Interior and exterior colors should be different.")
 
         # Validate nickname format if provided
         if self.nickname:
