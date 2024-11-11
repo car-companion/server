@@ -1,9 +1,10 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 from ..models import VehicleModel
 
 
 @admin.register(VehicleModel)
-class VehicleModelAdmin(admin.ModelAdmin):
+class VehicleModelAdmin(ModelAdmin):
     list_display = ('name', 'manufacturer')
     list_filter = ('manufacturer',)
     search_fields = ('name', 'manufacturer__name')
