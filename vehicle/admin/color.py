@@ -1,9 +1,10 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 from ..models import Color
 
 
 @admin.register(Color)
-class ColorAdmin(admin.ModelAdmin):
+class ColorAdmin(ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
     ordering = ('name',)

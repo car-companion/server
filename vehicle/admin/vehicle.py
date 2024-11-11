@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import StackedInline, ModelAdmin
 from ..models import Vehicle, VehicleComponent
 
 
-class VehicleComponentInline(admin.StackedInline):
+class VehicleComponentInline(StackedInline):
     model = VehicleComponent
     extra = 1
     classes = ['collapse']
@@ -20,7 +21,7 @@ class VehicleComponentInline(admin.StackedInline):
 
 
 @admin.register(Vehicle)
-class VehicleAdmin(admin.ModelAdmin):
+class VehicleAdmin(ModelAdmin):
     list_select_related = [
         'model',
         'model__manufacturer',

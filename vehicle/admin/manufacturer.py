@@ -1,11 +1,12 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 from django.utils.translation import gettext_lazy as _
 
 from ..models.manufacturer import Manufacturer
 
 
 @admin.register(Manufacturer)
-class ManufacturerAdmin(admin.ModelAdmin):
+class ManufacturerAdmin(ModelAdmin):
     list_display = ('name', 'get_models_count',)
     search_fields = ('name',)
     ordering = ('name',)
