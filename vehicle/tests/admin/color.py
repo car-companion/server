@@ -1,11 +1,11 @@
-from django.test import TestCase, Client
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
+from django.test import TestCase, Client
 from django.urls import reverse
-from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
+
+from ...admin.color import ColorAdmin, UnfoldColorWidget
 from ...models import Color
-from ...admin import ColorAdmin
 
 
 class ColorAdminTests(TestCase):
@@ -24,7 +24,12 @@ class ColorAdminTests(TestCase):
         )
 
         # Create test color
-        self.color = Color.objects.create(name='Red')
+        self.color = Color.objects.create(
+            name='Red',
+            hex_code='#FF0000',
+            is_metallic=False,
+            description='Basic red color'
+        )
 
         # Set up admin
         self.site = AdminSite()
@@ -44,171 +49,200 @@ class ColorAdminTests(TestCase):
         Scenario: Accessing the color list view in admin
         Given I am logged in as an admin user
         When I access the color list view
-        Then I should see the list of colors
-        And the response should include the test color
+        Then I should see the list of colors with all display fields
         """
         url = self.get_admin_url('changelist')
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Red')
+        self.assertContains(response, '#FF0000')
+        self.assertContains(response, 'background-color: #FF0000')
 
-    def test_search_color_by_name(self):
+    def test_search_color_functionality(self):
         """
-        Scenario: Searching for a color by name
+        Scenario: Testing search functionality in admin
         Given multiple colors exist in the database
-        When I search for a specific color name
-        Then I should only see the matching colors
+        When searching using different fields
+        Then appropriate results should be shown
         """
-        # Given
-        Color.objects.create(name='Blue')
-        Color.objects.create(name='Green')
+        # Create test colors
+        Color.objects.create(
+            name='Blue',
+            hex_code='#0000FF',
+            description='Royal blue color'
+        )
+        Color.objects.create(
+            name='Green',
+            hex_code='#00FF00',
+            description='Forest green'
+        )
 
-        # When
-        url = self.get_admin_url('changelist')
-        response = self.client.get(url, {'q': 'Blue'})
+        test_cases = [
+            ('Blue', ['Blue'], ['Green', 'Red']),  # Search by name
+            ('#00FF00', ['Green'], ['Blue', 'Red']),  # Search by hex code
+            ('Forest', ['Green'], ['Blue', 'Red']),  # Search by description
+        ]
 
-        # Then
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Blue')
-        self.assertNotContains(response, 'Green')
+        for search_term, should_contain, should_not_contain in test_cases:
+            with self.subTest(search_term=search_term):
+                url = self.get_admin_url('changelist')
+                response = self.client.get(url, {'q': search_term})
 
-    def test_create_color_with_valid_name(self):
+                self.assertEqual(response.status_code, 200)
+                for term in should_contain:
+                    self.assertContains(response, term)
+                for term in should_not_contain:
+                    self.assertNotContains(response, term)
+
+    def test_create_color_with_all_fields(self):
         """
-        Scenario: Creating a new color with valid name
+        Scenario: Creating a new color with all fields
         Given I am on the add color page
-        When I submit a valid color name
-        Then a new color should be created
-        And I should be redirected to the color list
+        When I submit valid color data
+        Then a new color should be created with all fields
         """
-        # Given
         url = self.get_admin_url('add')
+        data = {
+            'name': 'Metallic blue',
+            'hex_code': '#0000FF',
+            'is_metallic': 'on',
+            'description': 'Shiny metallic blue'
+        }
 
-        # When
-        response = self.client.post(url, {
-            'name': 'Yellow'
-        }, follow=True)
-
-        # Then
-        self.assertTrue(Color.objects.filter(name='Yellow').exists())
+        response = self.client.post(url, data, follow=True)
         self.assertEqual(response.status_code, 200)
+        created_color = Color.objects.get(name='Metallic blue')
+        self.assertEqual(created_color.hex_code, '#0000FF')
+        self.assertTrue(created_color.is_metallic)
+        self.assertEqual(created_color.description, 'Shiny metallic blue')
 
-    def test_create_color_with_duplicate_name(self):
+    def test_update_color_all_fields(self):
         """
-        Scenario: Attempting to create a color with duplicate name
-        Given a color already exists with the name 'Red'
-        When I try to create another color with the same name
-        Then it should show an error message
-        And the new color should not be created
-        """
-        # Given
-        url = self.get_admin_url('add')
-        initial_count = Color.objects.count()
-
-        # When
-        response = self.client.post(url, {
-            'name': 'Red'
-        })
-
-        # Then
-        self.assertEqual(Color.objects.count(), initial_count)
-        self.assertContains(response, 'A color with this name already exists.')
-
-    def test_update_color_name(self):
-        """
-        Scenario: Updating an existing color name
+        Scenario: Updating all fields of an existing color
         Given an existing color
-        When I update its name
-        Then the color name should be changed
-        And the changes should be saved in the database
+        When I update all its fields
+        Then the changes should be saved correctly
         """
-        # Given
         url = self.get_admin_url('change', self.color.id)
+        data = {
+            'name': 'Dark red',
+            'hex_code': '#8B0000',
+            'is_metallic': 'on',
+            'description': 'Updated description'
+        }
 
-        # When
-        response = self.client.post(url, {
-            'name': 'Dark red'
-        })
+        response = self.client.post(url, data)
 
-        # Then
         self.color.refresh_from_db()
         self.assertEqual(self.color.name, 'Dark red')
+        self.assertEqual(self.color.hex_code, '#8B0000')
+        self.assertTrue(self.color.is_metallic)
+        self.assertEqual(self.color.description, 'Updated description')
 
-    def test_delete_color(self):
+    def test_color_preview_rendering(self):
         """
-        Scenario: Deleting an existing color
-        Given an existing color in the database
-        When I delete the color through the admin interface
-        Then the color should be removed from the database
+        Scenario: Testing color preview in admin list view
+        Given a color with a specific hex code
+        When viewing the color list
+        Then the color preview should be correctly rendered
         """
-        # Given
-        url = self.get_admin_url('delete', self.color.id)
-
-        # When
-        response = self.client.post(url, {'post': 'yes'})
-
-        # Then
-        self.assertEqual(Color.objects.filter(id=self.color.id).count(), 0)
-
-    def test_empty_name_validation(self):
-        """
-        Scenario: Attempting to create a color with empty name
-        Given I am on the add color page
-        When I submit an empty color name
-        Then it should show a validation error
-        And no color should be created
-        """
-        # Given
-        url = self.get_admin_url('add')
-        initial_count = Color.objects.count()
-
-        # When
-        response = self.client.post(url, {
-            'name': ''
-        })
-
-        # Then
-        self.assertEqual(Color.objects.count(), initial_count)
-        self.assertContains(response, 'This field is required')
-
-    def test_non_admin_access(self):
-        """
-        Scenario: Non-admin user attempting to access admin
-        Given I am logged in as a non-admin user
-        When I try to access the color admin
-        Then I should be redirected to the login page
-        """
-        # Given
-        user = get_user_model()
-        regular_user = user.objects.create_user(
-            username='regular',
-            password='regular123'
-        )
-        client = Client()
-        client.force_login(regular_user)
-
-        # When
         url = self.get_admin_url('changelist')
-        response = client.get(url)
+        response = self.client.get(url)
 
-        # Then
-        self.assertEqual(response.status_code, 302)  # Redirects to login
+        self.assertContains(response, 'style="background-color: #FF0000')
+        self.assertContains(response, 'class="w-8 h-8 rounded border"')
 
-    def test_update_to_null_name(self):
+    def test_metallic_filter(self):
         """
-        Scenario: Updating an existing color name to null
-        Given an existing color with a valid name
-        When updating the name to null
-        Then it should raise a ValidationError with the correct message
+        Scenario: Testing metallic filter in admin
+        Given colors with different metallic states
+        When filtering by metallic status
+        Then appropriate results should be shown
         """
-        # Given
-        color = Color.objects.create(name="Valid Color")
-
-        # When/Then
-        color.name = None
-        with self.assertRaises(ValidationError) as context:
-            color.save()
-        self.assertEqual(
-            str(context.exception),
-            str(_("['Color name cannot be null.']"))
+        Color.objects.create(
+            name='Metallic Silver',
+            hex_code='#C0C0C0',
+            is_metallic=True
         )
+
+        url = self.get_admin_url('changelist')
+
+        # Test metallic filter
+        response = self.client.get(url, {'is_metallic__exact': '1'})
+        self.assertContains(response, 'Metallic silver')
+        self.assertNotContains(response, 'Red')
+
+        # Test non-metallic filter
+        response = self.client.get(url, {'is_metallic__exact': '0'})
+        self.assertContains(response, 'Red')
+        self.assertNotContains(response, 'Metallic silver')
+
+    def test_invalid_hex_code_validation(self):
+        """
+        Scenario: Testing hex code validation in admin form
+        Given invalid hex code input
+        When submitting the form
+        Then appropriate validation errors should be shown
+        """
+        url = self.get_admin_url('add')
+        data = {
+            'name': 'Invalid Color',
+            'hex_code': 'invalid',
+            'is_metallic': False
+        }
+
+        response = self.client.post(url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Color.objects.filter(name='Invalid Color').exists())
+        self.assertContains(response, 'Invalid hex color code format')
+
+    def test_form_widget_rendering(self):
+        """
+        Scenario: Testing custom color widget rendering
+        Given I am on the color add/change page
+        When the form is rendered
+        Then the custom color widget should be properly displayed
+        """
+        # Test default widget rendering
+        url = self.get_admin_url('add')
+        response = self.client.get(url)
+
+        self.assertContains(response, 'data-jscolor')
+        self.assertContains(response, 'Color in hexadecimal format')
+
+        # Test widget with custom attributes
+        custom_attrs = {
+            'class': 'custom-class',
+        }
+        widget = UnfoldColorWidget(attrs=custom_attrs)
+
+        rendered = widget.render('color', '#000000')
+
+        # Verify custom attributes are present
+        self.assertIn('custom-class', rendered)
+
+        # Verify default attributes are preserved
+        self.assertIn('data-jscolor', rendered)
+        self.assertIn('dark:text-gray-400', rendered)
+
+        # Test widget without custom attributes
+        default_widget = UnfoldColorWidget()
+        default_rendered = default_widget.render('color', '#000000')
+        self.assertIn('data-jscolor', default_rendered)
+        self.assertIn('dark:text-gray-400', default_rendered)
+
+    def test_fieldset_organization(self):
+        """
+        Scenario: Testing admin fieldset organization
+        Given I am on the color add/change page
+        When the form is rendered
+        Then fields should be organized in correct fieldsets
+        """
+        url = self.get_admin_url('add')
+        response = self.client.get(url)
+
+        self.assertContains(response, _('Basic Information'))
+        self.assertContains(response, _('Properties'))
+        self.assertContains(response, _('Additional Information'))

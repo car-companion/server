@@ -76,7 +76,8 @@ class Color(models.Model):
         # Hex code validation
         if self.hex_code:
             hex_pattern = r'^#[0-9A-Fa-f]{6}$'
-            if not re.match(hex_pattern, self.hex_code.upper()):
+            self.hex_code = self.hex_code.upper()
+            if not re.match(hex_pattern, self.hex_code):
                 errors['hex_code'] = _('Invalid hex color code format. Use format: #RRGGBB')
 
         # Description validation (optional)
@@ -90,8 +91,6 @@ class Color(models.Model):
         """
         Custom save method with additional validation.
         """
-        if self.hex_code:
-            self.hex_code = self.hex_code.upper()
         self.clean()
         super().save(*args, **kwargs)
 
