@@ -284,7 +284,7 @@ class VehicleComponent(TimeStampedModel):
         ordering = ['vehicle', 'component_type__name']
         verbose_name = _('Vehicle Component')
         verbose_name_plural = _('Vehicle Components')
-        unique_together = ['vehicle', 'name']
+        unique_together = ['vehicle', 'component_type', 'name']
         db_table = 'vehicle_components'
         indexes = [
             models.Index(fields=['name'], name='vehicle_component_name_idx'),

@@ -121,17 +121,11 @@ class ModelComponent(models.Model):
         help_text=_('Type of this component')
     )
 
-    is_required = models.BooleanField(
-        _('required'),
-        default=True,
-        help_text=_('Whether this component is required for all vehicles of this model')
-    )
-
     class Meta:
         ordering = ['model', 'component_type__name']
         verbose_name = _('Model Component')
         verbose_name_plural = _('Model Components')
-        unique_together = ['model', 'name']
+        unique_together = ['model', 'name', 'component_type']
         db_table = 'model_components'
 
     def clean(self):

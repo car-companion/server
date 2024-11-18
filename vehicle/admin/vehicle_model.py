@@ -14,7 +14,6 @@ class ModelComponentInline(TabularInline):
 
     fields = [
         ('name', 'component_type'),
-        'is_required'
     ]
 
     autocomplete_fields = ['component_type']
