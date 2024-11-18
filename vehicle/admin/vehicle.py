@@ -1,10 +1,14 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from unfold.admin import StackedInline, ModelAdmin
-from ..models import Vehicle, VehicleComponent
+from unfold.admin import ModelAdmin, StackedInline
+
+from ..models.vehicle import Vehicle, VehicleComponent
 
 
 class VehicleComponentInline(StackedInline):
+    """
+    Inline admin for managing components of a specific vehicle.
+    """
     model = VehicleComponent
     extra = 1
     classes = ['collapse']
@@ -16,12 +20,12 @@ class VehicleComponentInline(StackedInline):
 
     autocomplete_fields = ['component_type']
 
-    verbose_name = _("Component")
-    verbose_name_plural = _("Components")
-
 
 @admin.register(Vehicle)
 class VehicleAdmin(ModelAdmin):
+    """
+    Admin interface for managing vehicles.
+    """
     list_select_related = [
         'model',
         'model__manufacturer',
@@ -87,3 +91,23 @@ class VehicleAdmin(ModelAdmin):
         return obj.components.count()
 
     get_components_count.short_description = _('Components')
+
+    def save_model(self, request, obj, form, change):
+        """
+        Override save_model to handle component creation from model
+        when a new vehicle is created.
+        """
+        creating = not change  # True if creating new vehicle
+
+        super().save_model(request, obj, form, change)
+
+        # If this is a new vehicle, create components from model
+        if creating:
+            model = obj.model
+            for model_component in model.default_components.all():
+                VehicleComponent.objects.create(
+                    name=model_component.name,
+                    component_type=model_component.component_type,
+                    vehicle=obj,
+                    status=0.0  # Default initial status
+                )

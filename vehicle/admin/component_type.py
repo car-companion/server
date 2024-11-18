@@ -1,6 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from ..models.component import ComponentType, VehicleComponent
+from ..models.component_type import ComponentType
 
 
 @admin.register(ComponentType)
