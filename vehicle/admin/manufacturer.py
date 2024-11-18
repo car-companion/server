@@ -51,7 +51,7 @@ class ManufacturerAdmin(ModelAdmin):
         )
 
     get_models_count.short_description = _("Models Count")
-    get_models_count.admin_order_field = 'models__count'
+    get_models_count.admin_order_field = 'models_count'
 
     def display_website(self, obj):
         """Display website as a clickable link"""
