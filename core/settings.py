@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import environ
 from django.conf.global_settings import INTERNAL_IPS
+from django.conf.urls.static import static
 
 env = environ.Env()
 
@@ -59,6 +60,7 @@ INSTALLED_APPS = [
     'health_check.cache',
     'health_check.storage',
     'health_check.contrib.migrations',
+    'colorfield',
     'vehicle'
 ]
 
