@@ -134,13 +134,17 @@ class ModelComponent(models.Model):
         elif not self.name.strip():
             raise ValidationError(_('Component name cannot be blank.'))
 
-        self.name = re.sub(r'\s+', ' ', self.name.strip())
+        self.name = re.sub(r'\s+', ' ', self.name.strip()).capitalize()
 
-        if len(self.name) < 1:
-            raise ValidationError(_('Component name must be at least 1 characters long.'))
+        if len(self.name) < 2:
+            raise ValidationError(_('Component name must be at least 2 characters long.'))
 
         if re.search(r'[!@#$%^&*()+=\[\]{};\':"\\|,.<>/?]', self.name):
             raise ValidationError(_('Component name contains invalid special characters.'))
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.component_type}) - {self.model}"
