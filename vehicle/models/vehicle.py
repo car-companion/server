@@ -1,5 +1,6 @@
 import re
 from django.db import models
+from django.contrib.auth import get_user_model
 from django.core.validators import (
     MinLengthValidator,
     MaxLengthValidator,
@@ -14,6 +15,8 @@ from model_utils.models import TimeStampedModel
 from typing import Any
 from .color import Color
 from .vehicle_model import VehicleModel
+
+User = get_user_model()
 
 
 def get_max_year():
@@ -130,6 +133,19 @@ class Vehicle(models.Model):
         }
     )
 
+    owner = models.ForeignKey(
+        User,
+        verbose_name=_("Owner"),
+        on_delete=models.SET_NULL,
+        related_name='vehicle_owner',
+        help_text=_("Owner of the vehicle"),
+        blank=True,
+        null=True,
+        error_messages={
+            'invalid': _("Select a valid vehicle model."),
+        }
+    )
+
     class Meta:
         verbose_name = _("Vehicle")
         verbose_name_plural = _("Vehicles")
@@ -141,6 +157,9 @@ class Vehicle(models.Model):
             models.Index(fields=['outer_color'], name='vehicle_outer_color_idx'),
             models.Index(fields=['interior_color'], name='vehicle_interior_color_idx'),
         ]
+        permissions = (
+            ('is_owner', 'Can control everything'),
+        )
 
     def clean(self) -> None:
         """
@@ -218,11 +237,14 @@ class Vehicle(models.Model):
         Returns a string representation of the vehicle.
         Format: YYYY Manufacturer Model (VIN)
         If nickname is set, append it: YYYY Manufacturer Model "Nickname" (VIN)
+        If owner is set, append it: YYYY Manufacturer Model "Nickname" (VIN) [Owned by: "Username"]
         """
-        base = f"{self.year_built} {self.model.manufacturer} {self.model}"
-        if self.nickname:
-            return f'{base} "{self.nickname}" ({self.vin})'
-        return f"{base} ({self.vin})"
+        return (
+              f'{self.year_built} {self.model.manufacturer} {self.model}'
+            + f' "{self.nickname}"' if self.nickname else ''
+            + f' ({self.vin})'
+            + f' [Owned by: {self.owner.username}]' if self.owner else ''
+        )
 
     @property
     def manufacturer(self):
