@@ -69,7 +69,7 @@ class Vehicle(models.Model):
                 message=_(f"Year must be {FIRST_MODEL_YEAR} or later.")
             ),
             MaxValueValidator(
-                get_max_year,
+                get_max_year(), # DRF-Spectacular doesn't like functions here so we will just call it now
                 message=_("Year cannot be in the future.")
             )
         ],
@@ -239,12 +239,13 @@ class Vehicle(models.Model):
         If nickname is set, append it: YYYY Manufacturer Model "Nickname" (VIN)
         If owner is set, append it: YYYY Manufacturer Model "Nickname" (VIN) [Owned by: "Username"]
         """
-        return (
-              f'{self.year_built} {self.model.manufacturer} {self.model}'
-            + f' "{self.nickname}"' if self.nickname else ''
-            + f' ({self.vin})'
-            + f' [Owned by: {self.owner.username}]' if self.owner else ''
-        )
+        base = f"{self.year_built} {self.model.manufacturer} {self.model}"
+        if self.nickname:
+            base += f' "{self.nickname}"'
+        base += f' {self.vin}'
+        if self.owner:
+            base += f' [Owned by: {self.owner.username}]'
+        return base
 
     @property
     def manufacturer(self):

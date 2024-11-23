@@ -451,6 +451,17 @@ files = [
 Django = ">=4.2"
 
 [[package]]
+name = "django-fixture-magic"
+version = "0.1.5"
+description = "A few extra management tools to handle fixtures."
+optional = false
+python-versions = "*"
+files = [
+    {file = "django-fixture-magic-0.1.5.tar.gz", hash = "sha256:d82a4d4f6ade078e942927b5157f0536d0cd0232adfeb943dced0858128dd734"},
+    {file = "django_fixture_magic-0.1.5-py2-none-any.whl", hash = "sha256:c50f3de4a46a5844e2c1e2a9ff88b29db0830da8383e43d5ef6a66f1c4bfd8af"},
+]
+
+[[package]]
 name = "django-guardian"
 version = "2.4.0"
 description = "Implementation of per object permissions for Django."
@@ -1161,4 +1172,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "70c5fdbea2bb951153884200a4c9c7fd951fbf7963061b0eda10c8fd9bfb285f"
+content-hash = "de0d9111b868e11e598e75d4f4cb20b201ecd7166fc3f377cb500398caf232e3"

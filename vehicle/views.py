@@ -7,20 +7,35 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_seriali
 from guardian.shortcuts import assign_perm, remove_perm
 
 from .models.vehicle import Vehicle
-from .serializers import VinSerializer
+from .serializers import VehicleSerializer, VehicleRequestSerializer
 
 User = get_user_model()
 
 
 @extend_schema(
     methods=['POST'],
-    request=VinSerializer,
+    request=VehicleRequestSerializer,
     responses={
-        '200': inline_serializer('take_ownership_200', fields={}),
-        '204': inline_serializer('take_ownership_204', fields={'message': serializers.CharField()}),
-        '400': inline_serializer('take_ownership_400', fields={'message': serializers.CharField()}),
-        '403': inline_serializer('take_ownership_403', fields={'message': serializers.CharField()}),
-        '404': inline_serializer('take_ownership_404', fields={'message': serializers.CharField()}),
+        '200': OpenApiResponse(
+            response=inline_serializer('TakeOwnershipOk', fields={'message': serializers.CharField(default='Ok')}),
+            description='Ownership successfully taken.',
+        ),
+        '204': OpenApiResponse(
+            response=inline_serializer('TakeOwnershipNop', fields={}),
+            description='User is already owner of the vehicle.',
+        ),
+        '400': OpenApiResponse(
+            response=inline_serializer('TakeOwnershipInvalidVin', fields={'message': serializers.CharField(default='VIN not specified')}),
+            description='VIN not specified in request.',
+        ),
+        '403': OpenApiResponse(
+            response=inline_serializer('TakeOwnershipHasOwner', fields={'message': serializers.CharField(default='Vehicle already has an owner')}),
+            description='Vehicle already has an owner.',
+        ),
+        '404': OpenApiResponse(
+            response=inline_serializer('TakeOwnershipNotFound', fields={'message': serializers.CharField(default='Vehicle with given VIN does not exist')}),
+            description='Invalid VIN provided in request.',
+        ),
     }
 )
 @api_view(['POST'])
@@ -40,24 +55,36 @@ def take_ownership(request):
 
     if vehicle.owner is not None:
         if vehicle.owner == user:
-            return Response({'message': 'You already own this vehicle'}, status=status.HTTP_204_NO_CONTENT)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'message': 'Vehicle already has an owner'}, status=status.HTTP_403_FORBIDDEN)
 
     vehicle.owner = user
     assign_perm('is_owner', user, vehicle)
 
     vehicle.save()
-    return Response({'msg': 'takeown'}, status=status.HTTP_200_OK)
+    return Response({'message': 'ok'}, status=status.HTTP_200_OK)
 
 
 @extend_schema(
     methods=['POST'],
-    request=VinSerializer,
+    request=VehicleRequestSerializer,
     responses={
-        '204': inline_serializer('disown_204', fields={}),
-        '400': inline_serializer('disown_400', fields={'message': serializers.CharField()}),
-        '403': inline_serializer('disown_403', fields={'message': serializers.CharField()}),
-        '404': inline_serializer('disown_404', fields={'message': serializers.CharField()}),
+        '204': OpenApiResponse(
+            response=inline_serializer('DisownOk', fields={}),
+            description='Vehicle sucessfully disowned.',
+        ),
+        '400': OpenApiResponse(
+            response=inline_serializer('DisownInvalidVin', fields={'message': serializers.CharField(default='VIN not specified')}),
+            description='VIN not specified in request.',
+        ),
+        '403': OpenApiResponse(
+            response=inline_serializer('DisownNotOwner', fields={'message': serializers.CharField(default='You are not the owner')}),
+            description='User is not owner of the vehicle.',
+        ),
+        '404': OpenApiResponse(
+            response=inline_serializer('DisownNotFound', fields={'message': serializers.CharField(default='Vehicle with given VIN does not exist')}),
+            description='Invalid VIN provided in request.',
+        ),
     }
 )
 @api_view(['POST'])
@@ -86,15 +113,16 @@ def disown(request):
 
 
 @extend_schema(
-    methods=['POST'],
+    methods=['GET'],
     request=None,
     responses={
-        '200': inline_serializer('my_vehicles_200', fields={'vins': serializers.ListSerializer(child=serializers.CharField())}),
-})
-@api_view(['POST'])
+        '200': VehicleSerializer,
+    }
+)
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_vehicles(request):
     """ Get all vehicles owned by the current user """
-    user = request.user
-    vehicles = Vehicle.objects.filter(owner=user).values_list('vin', flat=True)
-    return Response({'vins': vehicles}, status=status.HTTP_200_OK)
+    vehicles = Vehicle.objects.filter(owner=request.user)
+    ser = VehicleSerializer(vehicles, many=True)
+    return Response(ser.data, status=status.HTTP_200_OK)
