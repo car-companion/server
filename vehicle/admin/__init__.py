@@ -2,7 +2,7 @@ from .color import ColorAdmin
 from .manufacturer import ManufacturerAdmin
 from .vehicle_model import VehicleModelAdmin
 from .vehicle import VehicleAdmin
-from .component import ComponentTypeAdmin
+from .component_type import ComponentTypeAdmin
 from .user import UserAdmin
 from .group import GroupAdmin
 

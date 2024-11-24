@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import environ
 from django.conf.global_settings import INTERNAL_IPS
+from django.conf.urls.static import static
 
 env = environ.Env()
 
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     "unfold.contrib.filters",  # optional, if special filters are needed
     "unfold.contrib.forms",  # optional, if special form elements are needed
     "unfold.contrib.inlines",  # optional, if special inlines are needed
+    "unfold.contrib.guardian",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -59,6 +61,8 @@ INSTALLED_APPS = [
     'health_check.cache',
     'health_check.storage',
     'health_check.contrib.migrations',
+    'colorfield',
+    'guardian',
     'vehicle'
 ]
 
@@ -107,6 +111,12 @@ DATABASES = {
         "PASSWORD": env("DB_PASSWORD"),
     }
 }
+
+# Django-guardian permissions
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend', # this is default
+    'guardian.backends.ObjectPermissionBackend',
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

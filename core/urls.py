@@ -20,12 +20,18 @@ auth_patterns = ([
                      path('', include('djoser.urls.jwt')),
                  ], 'auth')
 
+# Vehicle ownership URLs
+vehicle_patterns = ([
+                        path('', include('vehicle.urls')),
+                    ], 'vehicle')
+
 # Core URL patterns
 urlpatterns = [
     path('api/', include([
         path('', include(router.urls)),
         path('auth/', include(auth_patterns)),
         path('schema/', include(schema_patterns)),
+        path('vehicle/', include(vehicle_patterns)),
     ])),
     path("admin/", admin.site.urls),
     path("__debug__/", include("debug_toolbar.urls")),

@@ -1,4 +1,6 @@
+import re
 from django.db import models
+from django.contrib.auth import get_user_model
 from django.core.validators import (
     MinLengthValidator,
     MaxLengthValidator,
@@ -9,9 +11,12 @@ from django.core.validators import (
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from model_utils.models import TimeStampedModel
 from typing import Any
 from .color import Color
 from .vehicle_model import VehicleModel
+
+User = get_user_model()
 
 
 def get_max_year():
@@ -64,7 +69,7 @@ class Vehicle(models.Model):
                 message=_(f"Year must be {FIRST_MODEL_YEAR} or later.")
             ),
             MaxValueValidator(
-                get_max_year,
+                get_max_year(), # DRF-Spectacular doesn't like functions here so we will just call it now
                 message=_("Year cannot be in the future.")
             )
         ],
@@ -128,6 +133,19 @@ class Vehicle(models.Model):
         }
     )
 
+    owner = models.ForeignKey(
+        User,
+        verbose_name=_("Owner"),
+        on_delete=models.SET_NULL,
+        related_name='vehicle_owner',
+        help_text=_("Owner of the vehicle"),
+        blank=True,
+        null=True,
+        error_messages={
+            'invalid': _("Select a valid vehicle model."),
+        }
+    )
+
     class Meta:
         verbose_name = _("Vehicle")
         verbose_name_plural = _("Vehicles")
@@ -139,6 +157,9 @@ class Vehicle(models.Model):
             models.Index(fields=['outer_color'], name='vehicle_outer_color_idx'),
             models.Index(fields=['interior_color'], name='vehicle_interior_color_idx'),
         ]
+        permissions = (
+            ('is_owner', 'Can control everything'),
+        )
 
     def clean(self) -> None:
         """
@@ -216,11 +237,15 @@ class Vehicle(models.Model):
         Returns a string representation of the vehicle.
         Format: YYYY Manufacturer Model (VIN)
         If nickname is set, append it: YYYY Manufacturer Model "Nickname" (VIN)
+        If owner is set, append it: YYYY Manufacturer Model "Nickname" (VIN) [Owned by: "Username"]
         """
         base = f"{self.year_built} {self.model.manufacturer} {self.model}"
         if self.nickname:
-            return f'{base} "{self.nickname}" ({self.vin})'
-        return f"{base} ({self.vin})"
+            base += f' "{self.nickname}"'
+        base += f' {self.vin}'
+        if self.owner:
+            base += f' [Owned by: {self.owner.username}]'
+        return base
 
     @property
     def manufacturer(self):
@@ -228,3 +253,106 @@ class Vehicle(models.Model):
         Get the manufacturer through the model relationship.
         """
         return self.model.manufacturer
+
+
+class VehicleComponent(TimeStampedModel):
+    """
+    Represents a specific component instance in a vehicle with its status.
+    """
+    from .component_type import ComponentType
+    name = models.CharField(
+        _('name'),
+        max_length=200,
+        help_text=_('Name of the component'),
+        error_messages={
+            'blank': _('Component name cannot be blank.'),
+        }
+    )
+
+    component_type = models.ForeignKey(
+        ComponentType,
+        on_delete=models.PROTECT,
+        related_name='vehicle_components',
+        verbose_name=_('component type'),
+        help_text=_('Type of this component'),
+        error_messages={
+            'null': _('Component type is required.'),
+        }
+    )
+
+    vehicle = models.ForeignKey(
+        'Vehicle',
+        on_delete=models.CASCADE,
+        related_name='components',
+        verbose_name=_('vehicle'),
+        help_text=_('Vehicle this component belongs to'),
+        error_messages={
+            'null': _('Vehicle is required.'),
+        }
+    )
+
+    status = models.FloatField(
+        _('status'),
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(0.0, _('Status cannot be less than 0')),
+            MaxValueValidator(1.0, _('Status cannot be greater than 1'))
+        ],
+        default=0.0,
+        help_text=_('Current status of the component (0.0-1.0)')
+    )
+
+    class Meta:
+        ordering = ['vehicle', 'component_type__name']
+        verbose_name = _('Vehicle Component')
+        verbose_name_plural = _('Vehicle Components')
+        unique_together = ['vehicle', 'component_type', 'name']
+        db_table = 'vehicle_components'
+        indexes = [
+            models.Index(fields=['name'], name='vehicle_component_name_idx'),
+            models.Index(fields=['component_type'], name='vehicle_component_type_idx'),
+            models.Index(fields=['vehicle'], name='vehicle_component_vehicle_idx'),
+            models.Index(fields=['status'], name='vehicle_component_status_idx'),
+        ]
+
+    def clean(self):
+        """
+        Custom validation for the VehicleComponent model.
+        """
+        if self.name is None:
+            raise ValidationError(_('Component name cannot be null.'))
+        elif not self.name.strip():
+            raise ValidationError(_('Component name cannot be blank.'))
+
+        # Standardize the name format
+        self.name = re.sub(r'\s+', ' ', self.name.strip())
+
+        # Check for minimum length after stripping
+        if len(self.name) < 2:
+            raise ValidationError(_('Component name must be at least 2 characters long.'))
+
+        # Validate against common special characters
+        if re.search(r'[!@#$%^&*()+=\[\]{};\':"\\|,.<>/?]', self.name):
+            raise ValidationError(_('Component name contains invalid special characters.'))
+
+        # Validate required relationships
+        if not self.component_type_id:
+            raise ValidationError(_('Component type is required.'))
+        if not self.vehicle_id:
+            raise ValidationError(_('Vehicle is required.'))
+
+        # Validate status range if provided
+        if self.status is not None:
+            if self.status < 0.0 or self.status > 1.0:
+                raise ValidationError(_('Status must be between 0.0 and 1.0.'))
+
+    def save(self, *args: Any, **kwargs: Any):
+        """
+        Custom save method with additional validation.
+        """
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.component_type} - {self.vehicle}"
