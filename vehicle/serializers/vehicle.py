@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field, OpenApiTypes
 
-from .models.vehicle import Vehicle
+from vehicle.models.vehicle import Vehicle
 
 
 class VehicleRequestSerializer(serializers.ModelSerializer):

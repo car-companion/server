@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from .views import take_ownership, disown, my_vehicles
+from .views.vehicle import take_ownership, disown, my_vehicles
 
 urlpatterns = [
     path('take-ownership/', take_ownership, name='take-ownership'),

@@ -63,7 +63,6 @@ INSTALLED_APPS = [
     'health_check.contrib.migrations',
     'colorfield',
     'guardian',
-    'fixture_magic',
     'vehicle'
 ]
 

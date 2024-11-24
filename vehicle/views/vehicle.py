@@ -6,8 +6,8 @@ from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from guardian.shortcuts import assign_perm, remove_perm
 
-from .models.vehicle import Vehicle
-from .serializers import VehicleSerializer, VehicleRequestSerializer
+from vehicle.models.vehicle import Vehicle
+from vehicle.serializers.vehicle import VehicleSerializer, VehicleRequestSerializer
 
 User = get_user_model()
 
