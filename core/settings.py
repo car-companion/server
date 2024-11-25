@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'health_check.contrib.migrations',
     'colorfield',
     'vehicle'
+    'authentication'
 ]
 
 MIDDLEWARE = [
@@ -173,10 +174,26 @@ SIMPLE_JWT = {
 }
 
 DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'SEND_ACTIVATION_EMAIL': True,
+    'ACTIVATION_URL': 'activate/{uid}/{token}/',
     'SERIALIZERS': {
         'user_create': 'core.serializers.UserRegistrationSerializer',
     }
 }
+
+# Email settings (some fields might need to be changed as they were used like this to test the email verification feature)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # 'console' must be set to 'smtp' was left like this
+EMAIL_HOST = 'smtp.gmail.com'  # Must be set to the email provider's SMTP server
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'  # Replace with email
+EMAIL_HOST_PASSWORD = 'your-email-password'  # Replace with your email's app password
+
+# Frontend settings for activation link
+FRONTEND_URL = 'http://localhost:8000'  # Must be set to our frontend domain
+#DEFAULT_FROM_EMAIL = 'your-email@gmail.com'
+
 
 # OpenAPI schema generation
 SPECTACULAR_SETTINGS = {

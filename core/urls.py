@@ -18,6 +18,7 @@ schema_patterns = ([
 auth_patterns = ([
                      path('', include('djoser.urls')),
                      path('', include('djoser.urls.jwt')),
+                     path('', include('authentication.urls')),
                  ], 'auth')
 
 # Core URL patterns
