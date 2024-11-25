@@ -9,5 +9,4 @@ __all__ = ['ColorAdminTests',
            'ColorModelTests',
            'ManufacturerModelTests',
            'ManufacturerAdminTests',
-           # 'VehicleOwnershipTests'
            ]
