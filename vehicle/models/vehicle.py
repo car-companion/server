@@ -303,7 +303,7 @@ class VehicleComponent(TimeStampedModel):
             raise ValidationError(_('Component name cannot be blank.'))
 
         # Standardize the name format
-        self.name = re.sub(r'\s+', ' ', self.name.strip())
+        self.name = re.sub(r'\s+', ' ', self.name.strip()).capitalize()
 
         # Check for minimum length after stripping
         if len(self.name) < 2:
@@ -323,6 +323,8 @@ class VehicleComponent(TimeStampedModel):
         if self.status is not None:
             if self.status < 0.0 or self.status > 1.0:
                 raise ValidationError(_('Status must be between 0.0 and 1.0.'))
+        else:
+            self.status = 0.0
 
     def save(self, *args: Any, **kwargs: Any):
         """

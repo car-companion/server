@@ -50,9 +50,6 @@ class VehicleModel(models.Model):
         # Standardize the name format
         self.name = re.sub(r'\s+', ' ', self.name.strip()).upper()
 
-        if len(self.name) < 1:
-            raise ValidationError(_('Model name must be at least 1 character long.'))
-
         if re.search(r'[!@#$%^&*()+=\[\]{};\':"\\|,.<>/?]', self.name):
             raise ValidationError(_('Model name contains invalid special characters.'))
 
@@ -60,7 +57,11 @@ class VehicleModel(models.Model):
             raise ValidationError(_('Manufacturer is required.'))
 
     def __str__(self):
-        return f"{self.manufacturer.name} {self.name}"
+        return f"{self.name}"
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def create_vehicle(self, vin, year_built, outer_color, interior_color, nickname=None):
         """
