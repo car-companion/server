@@ -30,7 +30,7 @@ class VehicleAdmin(ModelAdmin):
         'model',
         'model__manufacturer',
         'outer_color',
-        'interior_color'
+        'interior_color',
     ]
 
     list_display = [
@@ -66,7 +66,8 @@ class VehicleAdmin(ModelAdmin):
                 'vin',
                 'year_built',
                 'model',
-                'nickname'
+                'nickname',
+                # 'owner'
             )
         }),
         (_('Appearance'), {
@@ -92,22 +93,25 @@ class VehicleAdmin(ModelAdmin):
 
     get_components_count.short_description = _('Components')
 
-    def save_model(self, request, obj, form, change):
+    def save_related(self, request, form, formsets, change):
         """
-        Override save_model to handle component creation from model
-        when a new vehicle is created.
+        Override save_related to create default components after saving the vehicle
+        but before saving inline formsets.
         """
-        creating = not change  # True if creating new vehicle
+        creating = not change
 
-        super().save_model(request, obj, form, change)
+        # First save the vehicle
+        super().save_related(request, form, formsets, change)
 
-        # If this is a new vehicle, create components from model
+        # If this is a new vehicle, create components from model defaults
         if creating:
-            model = obj.model
+            model = form.instance.model
             for model_component in model.default_components.all():
-                VehicleComponent.objects.create(
+                VehicleComponent.objects.get_or_create(
                     name=model_component.name,
                     component_type=model_component.component_type,
-                    vehicle=obj,
-                    status=0.0  # Default initial status
+                    vehicle=form.instance,
+                    defaults={
+                        'status': 0.0  # Default initial status
+                    }
                 )
