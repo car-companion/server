@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, StackedInline
+from guardian.admin import GuardedModelAdmin
 
 from ..models.vehicle import Vehicle, VehicleComponent
 
@@ -22,7 +23,7 @@ class VehicleComponentInline(StackedInline):
 
 
 @admin.register(Vehicle)
-class VehicleAdmin(ModelAdmin):
+class VehicleAdmin(ModelAdmin, GuardedModelAdmin):
     """
     Admin interface for managing vehicles.
     """
@@ -31,6 +32,7 @@ class VehicleAdmin(ModelAdmin):
         'model__manufacturer',
         'outer_color',
         'interior_color',
+        'owner'
     ]
 
     list_display = [
@@ -67,7 +69,7 @@ class VehicleAdmin(ModelAdmin):
                 'year_built',
                 'model',
                 'nickname',
-                # 'owner'
+                'owner'
             )
         }),
         (_('Appearance'), {

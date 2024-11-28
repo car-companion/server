@@ -451,6 +451,31 @@ files = [
 Django = ">=4.2"
 
 [[package]]
+name = "django-fixture-magic"
+version = "0.1.5"
+description = "A few extra management tools to handle fixtures."
+optional = false
+python-versions = "*"
+files = [
+    {file = "django-fixture-magic-0.1.5.tar.gz", hash = "sha256:d82a4d4f6ade078e942927b5157f0536d0cd0232adfeb943dced0858128dd734"},
+    {file = "django_fixture_magic-0.1.5-py2-none-any.whl", hash = "sha256:c50f3de4a46a5844e2c1e2a9ff88b29db0830da8383e43d5ef6a66f1c4bfd8af"},
+]
+
+[[package]]
+name = "django-guardian"
+version = "2.4.0"
+description = "Implementation of per object permissions for Django."
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "django-guardian-2.4.0.tar.gz", hash = "sha256:c58a68ae76922d33e6bdc0e69af1892097838de56e93e78a8361090bcd9f89a0"},
+    {file = "django_guardian-2.4.0-py3-none-any.whl", hash = "sha256:440ca61358427e575323648b25f8384739e54c38b3d655c81d75e0cd0d61b697"},
+]
+
+[package.dependencies]
+Django = ">=2.2"
+
+[[package]]
 name = "django-health-check"
 version = "3.18.3"
 description = "Run checks on services like databases, queue servers, celery processes, etc."
