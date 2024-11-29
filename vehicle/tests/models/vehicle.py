@@ -214,7 +214,7 @@ class VehicleTests(TestCase):
         # Test without nickname
         self.assertEqual(
             str(self.base_vehicle),
-            f"2023 Bmw (DE) X5 ({self.base_vehicle.vin})"
+            f"2023 Bmw (DE) X5 {self.base_vehicle.vin}"
         )
 
         # Test with nickname
@@ -228,7 +228,7 @@ class VehicleTests(TestCase):
         )
         self.assertEqual(
             str(vehicle_with_nickname),
-            f'2023 Bmw (DE) X5 "Family Car" (NBA99999999999999)'
+            f'2023 Bmw (DE) X5 "Family Car" NBA99999999999999'
         )
 
     def test_manufacturer_property(self):
