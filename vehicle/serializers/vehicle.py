@@ -29,3 +29,16 @@ class VehicleSerializer(serializers.ModelSerializer):
     @extend_schema_field(OpenApiTypes.STR)
     def get_outer_color(self, vehicle: Vehicle) -> str:
         return str(vehicle.outer_color)
+
+class VehicleNicknameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = ['nickname']
+        extra_kwargs = {
+            'nickname': {
+                'required': True,
+                'allow_blank': False,
+                'min_length': 2,
+                'max_length': 100
+            }
+        }
