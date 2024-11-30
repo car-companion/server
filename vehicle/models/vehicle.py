@@ -69,7 +69,7 @@ class Vehicle(models.Model):
                 message=_(f"Year must be {FIRST_MODEL_YEAR} or later.")
             ),
             MaxValueValidator(
-                get_max_year(), # DRF-Spectacular doesn't like functions here so we will just call it now
+                get_max_year(),  # DRF-Spectacular doesn't like functions here so we will just call it now
                 message=_("Year cannot be in the future.")
             )
         ],
@@ -314,6 +314,10 @@ class VehicleComponent(TimeStampedModel):
             models.Index(fields=['component_type'], name='vehicle_component_type_idx'),
             models.Index(fields=['vehicle'], name='vehicle_component_vehicle_idx'),
             models.Index(fields=['status'], name='vehicle_component_status_idx'),
+        ]
+        permissions = [
+            ('view_status', 'Can view component status'),
+            ('change_status', 'Can change component status'),
         ]
 
     def clean(self):

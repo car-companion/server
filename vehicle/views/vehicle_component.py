@@ -1,8 +1,7 @@
-from rest_framework import status, generics
+from rest_framework import status, generics, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
-from rest_framework import serializers
 
 from vehicle.models import Vehicle, VehicleComponent
 from vehicle.serializers.vehicle_component import VehicleComponentSerializer
