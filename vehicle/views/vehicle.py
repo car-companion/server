@@ -1,173 +1,182 @@
+import re
+
 from django.shortcuts import get_object_or_404
-from rest_framework import status, serializers, permissions, generics
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from django.contrib.auth import get_user_model
-from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from guardian.shortcuts import assign_perm, remove_perm
+from rest_framework import status, permissions
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.viewsets import ViewSet
 
 from vehicle.models.vehicle import Vehicle
-from vehicle.serializers.vehicle import VehicleSerializer, VehicleRequestSerializer, VehicleNicknameSerializer
-
-User = get_user_model()
+from vehicle.serializers.vehicle import VehicleSerializer, NicknameSerializer
 
 
-@extend_schema(
-    methods=['POST'],
-    request=VehicleRequestSerializer,
-    responses={
-        '200': OpenApiResponse(
-            response=inline_serializer('TakeOwnershipOk', fields={'message': serializers.CharField(default='Ok')}),
-            description='Ownership successfully taken.',
-        ),
-        '204': OpenApiResponse(
-            response=inline_serializer('TakeOwnershipNop', fields={}),
-            description='User is already owner of the vehicle.',
-        ),
-        '400': OpenApiResponse(
-            response=inline_serializer('TakeOwnershipInvalidVin',
-                                       fields={'message': serializers.CharField(default='VIN not specified')}),
-            description='VIN not specified in request.',
-        ),
-        '403': OpenApiResponse(
-            response=inline_serializer('TakeOwnershipHasOwner', fields={
-                'message': serializers.CharField(default='Vehicle already has an owner')}),
-            description='Vehicle already has an owner.',
-        ),
-        '404': OpenApiResponse(
-            response=inline_serializer('TakeOwnershipNotFound', fields={
-                'message': serializers.CharField(default='Vehicle with given VIN does not exist')}),
-            description='Invalid VIN provided in request.',
-        ),
-    }
-)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def take_ownership(request):
-    """ Handle taking ownership of a vehicle. """
-
-    if 'vin' not in request.data:
-        return Response({'message': 'VIN not specified!'}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        vehicle = Vehicle.objects.get(vin=request.data['vin'])
-    except Vehicle.DoesNotExist:
-        return Response({'message': 'Vehicle with given VIN does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-    user = request.user
-
-    if vehicle.owner is not None:
-        if vehicle.owner == user:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'message': 'Vehicle already has an owner'}, status=status.HTTP_403_FORBIDDEN)
-
-    vehicle.owner = user
-    assign_perm('is_owner', user, vehicle)
-
-    vehicle.save()
-    return Response({'message': 'ok'}, status=status.HTTP_200_OK)
-
-
-@extend_schema(
-    methods=['POST'],
-    request=VehicleRequestSerializer,
-    responses={
-        '204': OpenApiResponse(
-            response=inline_serializer('DisownOk', fields={}),
-            description='Vehicle sucessfully disowned.',
-        ),
-        '400': OpenApiResponse(
-            response=inline_serializer('DisownInvalidVin',
-                                       fields={'message': serializers.CharField(default='VIN not specified')}),
-            description='VIN not specified in request.',
-        ),
-        '403': OpenApiResponse(
-            response=inline_serializer('DisownNotOwner',
-                                       fields={'message': serializers.CharField(default='You are not the owner')}),
-            description='User is not owner of the vehicle.',
-        ),
-        '404': OpenApiResponse(
-            response=inline_serializer('DisownNotFound', fields={
-                'message': serializers.CharField(default='Vehicle with given VIN does not exist')}),
-            description='Invalid VIN provided in request.',
-        ),
-    }
-)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def disown(request):
-    """ Handle disowning a vehicle. """
-
-    if 'vin' not in request.data:
-        return Response({'message': 'VIN not specified!'}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        vehicle = Vehicle.objects.get(vin=request.data['vin'])
-    except Vehicle.DoesNotExist:
-        return Response({'message': 'Vehicle with given VIN does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-    user = request.user
-
-    if vehicle.owner != user:
-        return Response({'message': 'You are not an owner of this vehicle'}, status=status.HTTP_403_FORBIDDEN)
-
-    vehicle.owner = None
-    remove_perm('is_owner', user, vehicle)
-
-    vehicle.save()
-    return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@extend_schema(
-    methods=['GET'],
-    request=None,
-    responses={
-        '200': VehicleSerializer,
-    }
-)
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def my_vehicles(request):
-    """ Get all vehicles owned by the current user """
-    vehicles = Vehicle.objects.filter(owner=request.user)
-    ser = VehicleSerializer(vehicles, many=True)
-    return Response(ser.data, status=status.HTTP_200_OK)
-
-
-class IsVehicleOwner(permissions.BasePermission):
+class VehicleViewSet(ViewSet):
     """
-    Custom permission to only allow owners of a vehicle to modify it.
+    ViewSet for managing vehicle ownership and details.
+
+    This ViewSet provides endpoints for:
+    - Taking ownership of vehicles
+    - Disowning vehicles
+    - Listing owned vehicles
+    - Managing vehicle nicknames
+
+    All actions require authentication.
     """
-
-    def has_object_permission(self, request, view, obj):
-        return obj.owner == request.user
-
-
-class VehicleNicknameView(generics.RetrieveUpdateAPIView):
-    serializer_class = VehicleNicknameSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVehicleOwner]
-    lookup_field = 'vin'
+    permission_classes = [permissions.IsAuthenticated]
     queryset = Vehicle.objects.all()
+    serializer_class = VehicleSerializer
+    lookup_field = "vin"
 
-    def get_object(self):
+    def get_vehicle(self, vin: str, user, require_owner: bool = True) -> Vehicle:
         """
-        Returns the vehicle object with the given VIN if the user is the owner.
-        """
-        vin = self.kwargs.get('vin')
-        obj = get_object_or_404(Vehicle, vin=vin)
-        self.check_object_permissions(self.request, obj)
-        return obj
+        Get a vehicle by VIN and optionally verify ownership.
 
-    def update(self, request, *args, **kwargs):
-        """
-        Update the nickname of the vehicle.
-        """
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
+        Args:
+            vin: Vehicle Identification Number
+            user: User making the request
+            require_owner: If True, raises PermissionDenied if user is not the owner
 
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        Returns:
+            Vehicle: The requested vehicle instance
 
-        return Response(serializer.data)
+        Raises:
+            Http404: If vehicle not found
+            PermissionDenied: If require_owner is True and user is not the owner
+        """
+        vehicle = get_object_or_404(self.queryset, vin=vin)
+        if require_owner and vehicle.owner != user:
+            raise PermissionDenied("You are not the owner of this vehicle")
+        return vehicle
+
+    @extend_schema(
+        request=None,
+        summary="Take ownership of a vehicle",
+        description="Claim ownership of an unowned vehicle",
+        responses={
+            200: VehicleSerializer,
+            208: OpenApiResponse(description="Already the owner"),
+            400: OpenApiResponse(description="VIN is invalid"),
+            403: OpenApiResponse(description="Vehicle has another owner"),
+            404: OpenApiResponse(description="Vehicle not found"),
+        }
+    )
+    @action(detail=True, methods=["post"])
+    def take_ownership(self, request: Request, vin: str) -> Response:
+        """
+        Take ownership of an unowned vehicle.
+
+        If successful, assigns ownership and 'is_owner' permission to the user.
+        """
+        if not(re.match(r'^[A-HJ-NPR-Z0-9]{17}$', vin.upper())):
+            return Response(
+                {"detail": "VIN is invalid"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        vehicle = get_object_or_404(self.queryset, vin=vin)
+
+        if vehicle.owner:
+            if vehicle.owner == request.user:
+                return Response(
+                    {"detail": "You already own this vehicle"},
+                    status=status.HTTP_208_ALREADY_REPORTED
+                )
+            return Response(
+                {"detail": "Vehicle already has an owner"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Assign ownership and permissions
+        vehicle.owner = request.user
+        vehicle.save()
+        assign_perm("is_owner", request.user, vehicle)
+
+        return Response(
+            self.serializer_class(vehicle).data,
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        summary="Disown a vehicle",
+        description="Release ownership of a vehicle you own",
+        responses={
+            204: OpenApiResponse(description="Successfully disowned"),
+            400: OpenApiResponse(description="VIN is invalid"),
+            403: OpenApiResponse(description="Not the owner"),
+            404: OpenApiResponse(description="Vehicle not found"),
+        }
+    )
+    @action(detail=True, methods=["delete"])
+    def disown(self, request: Request, vin: str) -> Response:
+        """
+        Release ownership of a vehicle.
+
+        Removes both ownership and 'is_owner' permission from the user.
+        """
+        if not(re.match(r'^[A-HJ-NPR-Z0-9]{17}$', vin.upper())):
+            return Response(
+                {"detail": "VIN is invalid"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        vehicle = self.get_vehicle(vin, request.user)
+
+        # Remove ownership and permissions
+        vehicle.owner = None
+        vehicle.save()
+        remove_perm("is_owner", request.user, vehicle)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        summary="List owned vehicles",
+        description="Get a list of all vehicles owned by the current user",
+        responses={200: VehicleSerializer(many=True)}
+    )
+    @action(detail=False, methods=["get"])
+    def my_vehicles(self, request: Request) -> Response:
+        """List all vehicles owned by the current user."""
+        vehicles = self.queryset.filter(owner=request.user)
+        return Response(
+            self.serializer_class(vehicles, many=True).data
+        )
+
+    @extend_schema(
+        summary="Update vehicle nickname",
+        description="Set a new nickname for a vehicle you own",
+        request=NicknameSerializer,
+        responses={
+            200: VehicleSerializer,
+            400: OpenApiResponse(description="Invalid nickname"),
+            403: OpenApiResponse(description="Not the owner"),
+            404: OpenApiResponse(description="Vehicle not found"),
+        }
+    )
+    @action(detail=True, methods=["put"])
+    def nickname(self, request: Request, vin: str) -> Response:
+        """
+        Update the nickname of a vehicle.
+
+        Requires vehicle ownership. Nickname must pass model validation.
+        """
+        vehicle = self.get_vehicle(vin, request.user)
+
+        serializer = NicknameSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update and save nickname
+        vehicle.nickname = serializer.validated_data['nickname']
+        vehicle.save()
+
+        return Response(
+            self.serializer_class(vehicle).data,
+            status=status.HTTP_200_OK
+        )

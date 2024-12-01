@@ -8,6 +8,9 @@ from .models.vehicle_model import VehicleModelTests, ModelComponentTests
 from .models.component_type import ComponentTypeModelTests
 from .models.vehicle import VehicleTests, VehicleComponentTests
 from .models.permissions import ComponentPermissionModelTests
+from .serializers.vehicle import ColorSerializerTests, VehicleModelSerializerTests, VehicleSerializerTests, \
+    NicknameSerializerTests
+from .views.vehicle import VehicleViewSetTests
 
 __all__ = ['ColorAdminTests',
            'ColorModelTests',
@@ -20,5 +23,10 @@ __all__ = ['ColorAdminTests',
            'ComponentTypeModelTests',
            'VehicleTests',
            'VehicleComponentTests',
-           'ComponentPermissionModelTests'
+           'ComponentPermissionModelTests',
+           'ColorSerializerTests',
+           'VehicleModelSerializerTests',
+           'VehicleSerializerTests',
+           'NicknameSerializerTests',
+           'VehicleViewSetTests',
            ]
