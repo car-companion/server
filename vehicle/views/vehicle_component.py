@@ -1,237 +1,251 @@
-from rest_framework import status, generics, serializers
+from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
-from guardian.shortcuts import get_perms
-from django.shortcuts import get_object_or_404
+import re
 
-from vehicle.models import Vehicle, VehicleComponent, ComponentPermission
-from vehicle.serializers.vehicle_component import VehicleComponentSerializer
+from vehicle.models import Vehicle, VehicleComponent
+from vehicle.serializers.vehicle_component import (
+    ComponentSerializer,
+    ComponentStatusUpdateSerializer
+)
 
 
-class BaseVehicleAccess:
-    """Mixin for vehicle and component access validation."""
+class ComponentBaseView(generics.GenericAPIView):
+    """Base view for component-related operations."""
 
-    def validate_vehicle_access(self, vin):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ComponentSerializer
+
+    VIN_PATTERN = r'^[A-HJ-NPR-Z0-9]{17}$'
+
+    def validate_vin(self, vin):
         """
-        Validate VIN format and basic vehicle access.
-        Returns (vehicle, error_response) tuple.
-        """
-        if len(vin) != 17:
-            return None, Response(
-                {'message': 'Invalid VIN format.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        Validate VIN format and return uppercase VIN if valid.
 
-        try:
-            vehicle = Vehicle.objects.get(vin=vin)
-        except Vehicle.DoesNotExist:
-            return None, Response(
-                {'message': 'Vehicle not found.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        return vehicle, None
-
-    def validate_component_access(self, vehicle, component, user, required_permission=None):
-        """
-        Validate component access based on ownership and permissions.
         Args:
-            vehicle: Vehicle instance
-            component: VehicleComponent instance
-            user: User requesting access
-            required_permission: specific permission required (e.g., 'change_status')
+            vin: Vehicle Identification Number
+
         Returns:
-            (bool, Response): (True, None) if access granted, (False, error_response) if denied
+            Uppercase VIN if valid
+
+        Raises:
+            ValidationError: If VIN format is invalid
         """
-        # Vehicle owner has full access
-        if vehicle.owner == user:
-            return True, None
+        vin = vin.upper()
+        if not re.match(self.VIN_PATTERN, vin):
+            raise ValidationError('VIN is invalid')
+        return vin
 
-        # Check if user has explicit permission
-        user_perms = get_perms(user, component)
+    def get_vehicle(self, vin):
+        """
+        Get vehicle by VIN with validation.
 
-        # For read operations, 'view_status' is enough
-        if not required_permission and 'view_status' in user_perms:
-            return True, None
+        Args:
+            vin: Vehicle Identification Number
 
-        # For write operations, check specific permission
-        if required_permission and required_permission in user_perms:
-            return True, None
+        Returns:
+            The requested vehicle instance
 
-        return False, Response(
-            {'message': 'Access denied.'},
-            status=status.HTTP_403_FORBIDDEN
+        Raises:
+            ValidationError: If VIN format is invalid
+            Http404: If vehicle not found
+        """
+        validated_vin = self.validate_vin(vin)
+        return get_object_or_404(Vehicle, vin=validated_vin)
+
+    def check_access(self, vehicle, user):
+        """Check if user has access to vehicle."""
+        return vehicle.owner == user
+
+    def handle_validation_error(self, exc):
+        """Convert ValidationError to Response."""
+        return Response(
+            {'detail': str(exc)},
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
-class VehicleComponentsListView(BaseVehicleAccess, generics.ListAPIView):
-    """List all components for a vehicle."""
-
-    serializer_class = VehicleComponentSerializer
-    permission_classes = [IsAuthenticated]
+class ComponentList(ComponentBaseView):
+    """View for listing all components of a vehicle."""
 
     @extend_schema(
+        operation_id="list_vehicle_components",
         responses={
-            200: OpenApiResponse(
-                response=VehicleComponentSerializer(many=True),
-                description='List of vehicle components'
-            ),
-            400: OpenApiResponse(
-                response=inline_serializer(
-                    'Error400',
-                    fields={'message': serializers.CharField()}
-                )
-            ),
-            403: OpenApiResponse(
-                response=inline_serializer(
-                    'Error403',
-                    fields={'message': serializers.CharField()}
-                )
-            ),
-            404: OpenApiResponse(
-                response=inline_serializer(
-                    'Error404',
-                    fields={'message': serializers.CharField()}
-                )
-            ),
-        }
+            200: ComponentSerializer(many=True),
+            400: OpenApiResponse(description="VIN is invalid"),
+            403: OpenApiResponse(description='Access denied'),
+            404: OpenApiResponse(description='Vehicle not found')
+        },
+        description='List all components for a vehicle'
     )
     def get(self, request, vin):
-        """List all components for a vehicle the user has access to."""
-        vehicle, error = self.validate_vehicle_access(vin)
-        if error:
-            return error
-
-        # If user is owner, return all components
-        if vehicle.owner == request.user:
-            components = VehicleComponent.objects.filter(vehicle=vehicle)
-        else:
-            # Get only components user has permission to view
-            component_ids = []
-            for component in VehicleComponent.objects.filter(vehicle=vehicle):
-                has_access, _ = self.validate_component_access(
-                    vehicle, component, request.user
+        try:
+            vehicle = self.get_vehicle(vin)
+            if not self.check_access(vehicle, request.user):
+                return Response(
+                    {'detail': 'Access denied'},
+                    status=status.HTTP_403_FORBIDDEN
                 )
-                if has_access:
-                    component_ids.append(component.id)
 
-            components = VehicleComponent.objects.filter(id__in=component_ids)
-
-        serializer = self.serializer_class(components, many=True)
-        return Response(serializer.data)
+            queryset = VehicleComponent.objects.filter(vehicle=vehicle)
+            return Response(self.serializer_class(queryset, many=True).data)
+        except ValidationError as e:
+            return self.handle_validation_error(e)
 
 
-class VehicleComponentDetailView(BaseVehicleAccess, generics.GenericAPIView):
-    """Manage a specific vehicle component."""
+class ComponentByType(ComponentBaseView):
+    """View for managing components by type."""
 
-    serializer_class = VehicleComponentSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_component(self, vehicle, component_type, component_name):
-        """Get a specific component or return None."""
+    @extend_schema(
+        operation_id="list_components_by_type",
+        responses={
+            200: ComponentSerializer(many=True),
+            400: OpenApiResponse(description="VIN is invalid"),
+            403: OpenApiResponse(description='Access denied'),
+            404: OpenApiResponse(description='Vehicle or components not found')
+        },
+        description='Get all components of a specific type for a vehicle'
+    )
+    def get(self, request, vin, type_name):
         try:
-            return VehicleComponent.objects.get(
+            vehicle = self.get_vehicle(vin)
+            if not self.check_access(vehicle, request.user):
+                return Response(
+                    {'detail': 'Access denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            components = VehicleComponent.objects.filter(
                 vehicle=vehicle,
-                component_type__name=component_type,
-                name=component_name
+                component_type__name=type_name
             )
-        except VehicleComponent.DoesNotExist:
-            return None
+
+            if not components.exists():
+                return Response(
+                    {'detail': 'No components found of this type'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            return Response(self.serializer_class(components, many=True).data)
+        except ValidationError as e:
+            return self.handle_validation_error(e)
 
     @extend_schema(
+        operation_id="update_components_by_type",
+        request=ComponentStatusUpdateSerializer,
         responses={
-            200: VehicleComponentSerializer,
-            400: inline_serializer(
-                'Error400',
-                fields={'message': serializers.CharField()}
-            ),
-            403: inline_serializer(
-                'Error403',
-                fields={'message': serializers.CharField()}
-            ),
-            404: inline_serializer(
-                'Error404',
-                fields={'message': serializers.CharField()}
-            ),
-        }
+            200: ComponentSerializer(many=True),
+            400: OpenApiResponse(description='VIN is invalid or Invalid status value'),
+            403: OpenApiResponse(description='Access denied'),
+            404: OpenApiResponse(description='Vehicle or components not found')
+        },
+        description='Update status of all components of a specific type'
     )
-    def get(self, request, vin, component_type, component_name):
-        """Get details of a specific component."""
-        vehicle, error = self.validate_vehicle_access(vin)
-        if error:
-            return error
-
-        component = self.get_component(vehicle, component_type, component_name)
-        if not component:
-            return Response(
-                {'message': 'Component not found.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # Check access permission
-        has_access, error = self.validate_component_access(
-            vehicle, component, request.user
-        )
-        if not has_access:
-            return error
-
-        serializer = self.serializer_class(component)
-        return Response(serializer.data)
-
-    @extend_schema(
-        request=inline_serializer(
-            'ComponentStatusUpdate',
-            fields={'status': serializers.FloatField()}
-        ),
-        responses={
-            200: VehicleComponentSerializer,
-            400: inline_serializer(
-                'Error400',
-                fields={'message': serializers.CharField()}
-            ),
-            403: inline_serializer(
-                'Error403',
-                fields={'message': serializers.CharField()}
-            ),
-            404: inline_serializer(
-                'Error404',
-                fields={'message': serializers.CharField()}
-            ),
-        }
-    )
-    def patch(self, request, vin, component_type, component_name):
-        """Update the status of a specific component."""
-        vehicle, error = self.validate_vehicle_access(vin)
-        if error:
-            return error
-
-        component = self.get_component(vehicle, component_type, component_name)
-        if not component:
-            return Response(
-                {'message': 'Component not found.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # Check write permission
-        has_access, error = self.validate_component_access(
-            vehicle, component, request.user, 'change_status'
-        )
-        if not has_access:
-            return error
-
+    def patch(self, request, vin, type_name):
         try:
-            status_value = float(request.data.get('status', 0))
-            if not 0 <= status_value <= 1:
-                raise ValueError
-        except (TypeError, ValueError):
-            return Response(
-                {'message': 'Status must be a float between 0 and 1.'},
-                status=status.HTTP_400_BAD_REQUEST
+            vehicle = self.get_vehicle(vin)
+            if not self.check_access(vehicle, request.user):
+                return Response(
+                    {'detail': 'Access denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            components = VehicleComponent.objects.filter(
+                vehicle=vehicle,
+                component_type__name=type_name
             )
 
-        component.status = status_value
-        component.save()
+            if not components.exists():
+                return Response(
+                    {'detail': 'No components found of this type'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-        serializer = self.serializer_class(component)
-        return Response(serializer.data)
+            serializer = ComponentStatusUpdateSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            new_status = serializer.validated_data['status']
+            components.update(status=new_status)
+            return Response(self.serializer_class(components, many=True).data)
+        except ValidationError as e:
+            return self.handle_validation_error(e)
+
+
+class ComponentDetail(ComponentBaseView):
+    """View for managing individual components."""
+
+    @extend_schema(
+        operation_id="get_component_detail",  # Unique operationId
+        responses={
+            200: ComponentSerializer,
+            400: OpenApiResponse(description="VIN is invalid"),
+            403: OpenApiResponse(description='Access denied'),
+            404: OpenApiResponse(description='Vehicle or component not found')
+        },
+        description='Get details of a specific component'
+    )
+    def get(self, request, vin, type_name, name):
+        try:
+            vehicle = self.get_vehicle(vin)
+            if not self.check_access(vehicle, request.user):
+                return Response(
+                    {'detail': 'Access denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            component = get_object_or_404(
+                VehicleComponent,
+                vehicle=vehicle,
+                component_type__name=type_name,
+                name=name
+            )
+            return Response(self.serializer_class(component).data)
+        except ValidationError as e:
+            return self.handle_validation_error(e)
+
+    @extend_schema(
+        operation_id="update_component_detail",
+        request=ComponentStatusUpdateSerializer,
+        responses={
+            200: ComponentSerializer,
+            400: OpenApiResponse(description='Invalid status value or Invalid VIN'),
+            403: OpenApiResponse(description='Access denied'),
+            404: OpenApiResponse(description='Vehicle or component not found')
+        },
+        description='Update status of a specific component'
+    )
+    def patch(self, request, vin, type_name, name):
+        try:
+            vehicle = self.get_vehicle(vin)
+            if not self.check_access(vehicle, request.user):
+                return Response(
+                    {'detail': 'Access denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            component = get_object_or_404(
+                VehicleComponent,
+                vehicle=vehicle,
+                component_type__name=type_name,
+                name=name
+            )
+
+            serializer = ComponentStatusUpdateSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            component.status = serializer.validated_data['status']
+            component.save()
+            return Response(self.serializer_class(component).data)
+        except ValidationError as e:
+            return self.handle_validation_error(e)

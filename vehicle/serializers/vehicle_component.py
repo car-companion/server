@@ -1,10 +1,20 @@
 from rest_framework import serializers
-from vehicle.models import VehicleComponent
+from vehicle.models import VehicleComponent, ComponentType
 
 
-class VehicleComponentSerializer(serializers.ModelSerializer):
-    component_type_name = serializers.CharField(source='component_type.name', read_only=True)
+class ComponentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ComponentType
+        fields = ['name']
+
+
+class ComponentSerializer(serializers.ModelSerializer):
+    type = ComponentTypeSerializer(source='component_type', read_only=True)
 
     class Meta:
         model = VehicleComponent
-        fields = ['name', 'component_type_name', 'status']
+        fields = ['name', 'type', 'status']
+
+
+class ComponentStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.FloatField(min_value=0.0, max_value=1.0, required=True)
