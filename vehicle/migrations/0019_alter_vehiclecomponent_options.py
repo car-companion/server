@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("vehicle", "0018_alter_vehicle_year_built_componentpermission"),
     ]
