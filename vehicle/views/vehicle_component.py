@@ -107,7 +107,8 @@ class ComponentByType(ComponentBaseView):
             403: OpenApiResponse(description='Access denied'),
             404: OpenApiResponse(description='Vehicle or components not found')
         },
-        description='Get all components of a specific type for a vehicle'
+        description='Get all components of a specific type for a vehicle',
+        tags=['Vehicle Component']
     )
     def get(self, request, vin, type_name):
         try:
