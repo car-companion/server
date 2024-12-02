@@ -52,6 +52,18 @@ class VehicleViewSet(ViewSet):
             raise PermissionDenied("You are not the owner of this vehicle")
         return vehicle
 
+    def vin_is_valid(self, vin: str) -> bool:
+        """
+        Checks in the VIN provided is in valid format
+
+        Args:
+            vin: Vehicle Identification Number
+
+        Returns:
+            Bool: Whether VIN is valid
+        """
+        return re.match(Vehicle.VIN_PATTERN, vin.upper()) is not None
+        
     @extend_schema(
         request=None,
         summary="Take ownership of a vehicle",
@@ -62,7 +74,8 @@ class VehicleViewSet(ViewSet):
             400: OpenApiResponse(description="VIN is invalid"),
             403: OpenApiResponse(description="Vehicle has another owner"),
             404: OpenApiResponse(description="Vehicle not found"),
-        }
+        },
+        tags=['Vehicle']
     )
     @action(detail=True, methods=["post"])
     def take_ownership(self, request: Request, vin: str) -> Response:
@@ -108,7 +121,8 @@ class VehicleViewSet(ViewSet):
             400: OpenApiResponse(description="VIN is invalid"),
             403: OpenApiResponse(description="Not the owner"),
             404: OpenApiResponse(description="Vehicle not found"),
-        }
+        },
+        tags=['Vehicle']
     )
     @action(detail=True, methods=["delete"])
     def disown(self, request: Request, vin: str) -> Response:
@@ -135,7 +149,8 @@ class VehicleViewSet(ViewSet):
     @extend_schema(
         summary="List owned vehicles",
         description="Get a list of all vehicles owned by the current user",
-        responses={200: VehicleSerializer(many=True)}
+        responses={200: VehicleSerializer(many=True)},
+        tags=['Vehicle']
     )
     @action(detail=False, methods=["get"])
     def my_vehicles(self, request: Request) -> Response:
@@ -154,7 +169,8 @@ class VehicleViewSet(ViewSet):
             400: OpenApiResponse(description="Invalid nickname"),
             403: OpenApiResponse(description="Not the owner"),
             404: OpenApiResponse(description="Vehicle not found"),
-        }
+        },
+        tags=['Vehicle']
     )
     @action(detail=True, methods=["put"])
     def nickname(self, request: Request, vin: str) -> Response:

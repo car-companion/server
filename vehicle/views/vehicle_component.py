@@ -79,7 +79,8 @@ class ComponentList(ComponentBaseView):
             403: OpenApiResponse(description='Access denied'),
             404: OpenApiResponse(description='Vehicle not found')
         },
-        description='List all components for a vehicle'
+        description='List all components for a vehicle',
+        tags=['Vehicle Component']
     )
     def get(self, request, vin):
         try:
@@ -107,7 +108,8 @@ class ComponentByType(ComponentBaseView):
             403: OpenApiResponse(description='Access denied'),
             404: OpenApiResponse(description='Vehicle or components not found')
         },
-        description='Get all components of a specific type for a vehicle'
+        description='Get all components of a specific type for a vehicle',
+        tags=['Vehicle Component']
     )
     def get(self, request, vin, type_name):
         try:
@@ -142,7 +144,8 @@ class ComponentByType(ComponentBaseView):
             403: OpenApiResponse(description='Access denied'),
             404: OpenApiResponse(description='Vehicle or components not found')
         },
-        description='Update status of all components of a specific type'
+        description='Update status of all components of a specific type',
+        tags=['Vehicle Component']
     )
     def patch(self, request, vin, type_name):
         try:
@@ -189,7 +192,8 @@ class ComponentDetail(ComponentBaseView):
             403: OpenApiResponse(description='Access denied'),
             404: OpenApiResponse(description='Vehicle or component not found')
         },
-        description='Get details of a specific component'
+        description='Get details of a specific component',
+        tags=['Vehicle Component']
     )
     def get(self, request, vin, type_name, name):
         try:
@@ -219,7 +223,8 @@ class ComponentDetail(ComponentBaseView):
             403: OpenApiResponse(description='Access denied'),
             404: OpenApiResponse(description='Vehicle or component not found')
         },
-        description='Update status of a specific component'
+        description='Update status of a specific component',
+        tags=['Vehicle Component']
     )
     def patch(self, request, vin, type_name, name):
         try:
