@@ -74,7 +74,8 @@ class VehicleViewSet(ViewSet):
             400: OpenApiResponse(description="VIN is invalid"),
             403: OpenApiResponse(description="Vehicle has another owner"),
             404: OpenApiResponse(description="Vehicle not found"),
-        }
+        },
+        tags=['Vehicle']
     )
     @action(detail=True, methods=["post"])
     def take_ownership(self, request: Request, vin: str) -> Response:
