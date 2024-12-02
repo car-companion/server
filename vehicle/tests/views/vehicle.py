@@ -40,6 +40,9 @@ class VehicleViewSetTests(APITestCase):
         # Set up API client
         self.client = APIClient()
 
+    def get_url(self, route_name, **kwargs):
+        return reverse(f'vehicle:{route_name}', kwargs=kwargs)
+
     def test_take_ownership_success(self):
         """
         Feature: Vehicle Ownership
@@ -54,7 +57,7 @@ class VehicleViewSetTests(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         # When
-        url = reverse('vehicle:vehicle-take-ownership', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-take-ownership', vin=self.vehicle.vin)
         response = self.client.post(url)
 
         # Then
@@ -77,7 +80,7 @@ class VehicleViewSetTests(APITestCase):
         self.vehicle.save()
 
         # When
-        url = reverse('vehicle:vehicle-take-ownership', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-take-ownership', vin=self.vehicle.vin)
         response = self.client.post(url)
 
         # Then
@@ -97,7 +100,7 @@ class VehicleViewSetTests(APITestCase):
         self.vehicle.save()
 
         # When
-        url = reverse('vehicle:vehicle-take-ownership', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-take-ownership', vin=self.vehicle.vin)
         response = self.client.post(url)
 
         # Then
@@ -119,7 +122,7 @@ class VehicleViewSetTests(APITestCase):
         assign_perm('is_owner', self.user, self.vehicle)
 
         # When
-        url = reverse('vehicle:vehicle-disown', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-disown', vin=self.vehicle.vin)
         response = self.client.delete(url)
 
         # Then
@@ -142,7 +145,7 @@ class VehicleViewSetTests(APITestCase):
         self.vehicle.save()
 
         # When
-        url = reverse('vehicle:vehicle-disown', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-disown', vin=self.vehicle.vin)
         response = self.client.delete(url)
 
         # Then
@@ -179,7 +182,7 @@ class VehicleViewSetTests(APITestCase):
         )
 
         # When
-        url = reverse('vehicle:vehicle-my-vehicles')
+        url = self.get_url('vehicle-my-vehicles')
         response = self.client.get(url)
 
         # Then
@@ -201,7 +204,7 @@ class VehicleViewSetTests(APITestCase):
         self.vehicle.save()
 
         # When
-        url = reverse('vehicle:vehicle-nickname', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-nickname', vin=self.vehicle.vin)
         response = self.client.put(url, {'nickname': 'MyNewNickname'})
 
         # Then
@@ -223,7 +226,7 @@ class VehicleViewSetTests(APITestCase):
         self.vehicle.save()
 
         # When
-        url = reverse('vehicle:vehicle-nickname', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-nickname', vin=self.vehicle.vin)
         response = self.client.put(url, {'nickname': '@#Invalid'})
 
         # Then
@@ -241,12 +244,12 @@ class VehicleViewSetTests(APITestCase):
         invalid_vin = '1' * 18  # Too long
 
         # Test take_ownership
-        url = reverse('vehicle:vehicle-take-ownership', kwargs={'vin': invalid_vin})
+        url = self.get_url('vehicle-take-ownership', vin=invalid_vin)
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         # Test disown
-        url = reverse('vehicle:vehicle-disown', kwargs={'vin': invalid_vin})
+        url = self.get_url('vehicle-disown', vin=invalid_vin)
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -260,17 +263,17 @@ class VehicleViewSetTests(APITestCase):
         # Given - client not authenticated
 
         # Test take_ownership
-        url = reverse('vehicle:vehicle-take-ownership', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-take-ownership', vin=self.vehicle.vin)
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         # Test disown
-        url = reverse('vehicle:vehicle-disown', kwargs={'vin': self.vehicle.vin})
+        url = self.get_url('vehicle-disown', vin=self.vehicle.vin)
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         # Test my_vehicles
-        url = reverse('vehicle:vehicle-my-vehicles')
+        url = self.get_url('vehicle-my-vehicles')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 

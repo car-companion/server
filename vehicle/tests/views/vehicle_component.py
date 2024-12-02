@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase, APIClient
 
 from vehicle.models import (
     Vehicle, VehicleModel, Manufacturer, Color,
-    ComponentType, VehicleComponent
+    ComponentType, VehicleComponent, ComponentPermission
 )
 
 
@@ -169,14 +169,14 @@ class ComponentViewsTests(APITestCase):
         self.client.force_authenticate(user=self.other_user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data['detail'], 'Access denied')
+        self.assertEqual(response.data['detail'], 'Access denied - insufficient permissions for Engine components')
 
         # Test vehicle with no owner
         self.vehicle.owner = None
         self.vehicle.save()
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data['detail'], 'Access denied')
+        self.assertEqual(response.data['detail'], 'Access denied - insufficient permissions for Engine components')
 
     def test_component_type_update_access_denied_scenarios(self):
         """
@@ -192,14 +192,16 @@ class ComponentViewsTests(APITestCase):
         self.client.force_authenticate(user=self.other_user)
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data['detail'], 'Access denied')
+        self.assertEqual(response.data['detail'],
+                         'Access denied - insufficient write permissions for Engine components')
 
         # Test vehicle with no owner
         self.vehicle.owner = None
         self.vehicle.save()
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data['detail'], 'Access denied')
+        self.assertEqual(response.data['detail'],
+                         'Access denied - insufficient write permissions for Engine components')
 
     def test_component_type_not_found_update_scenarios(self):
         """
@@ -215,14 +217,14 @@ class ComponentViewsTests(APITestCase):
         url = self._get_component_type_url(self.vehicle.vin, 'NonExistentType')
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data['detail'], 'No components found of this type')
+        self.assertEqual(response.data['detail'], 'No components found of type NonExistentType with write permission')
 
         # Test empty type
         empty_type = ComponentType.objects.create(name='EmptyType')
         url = self._get_component_type_url(self.vehicle.vin, 'EmptyType')
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data['detail'], 'No components found of this type')
+        self.assertEqual(response.data['detail'], 'No components found of type EmptyType with write permission')
 
     def test_component_type_validation_scenarios(self):
         """
@@ -382,14 +384,14 @@ class ComponentViewsTests(APITestCase):
         self.client.force_authenticate(user=self.other_user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data['detail'], 'Access denied')
+        self.assertEqual(response.data['detail'], 'Access denied - insufficient permissions for component Main engine')
 
         # Test vehicle with no owner
         self.vehicle.owner = None
         self.vehicle.save()
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data['detail'], 'Access denied')
+        self.assertEqual(response.data['detail'], 'Access denied - insufficient permissions for component Main engine')
 
     def test_component_detail_access_denied_patch_scenarios(self):
         """
@@ -413,14 +415,16 @@ class ComponentViewsTests(APITestCase):
         self.client.force_authenticate(user=self.other_user)
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data['detail'], 'Access denied')
+        self.assertEqual(response.data['detail'],
+                         'Access denied - insufficient write permissions for component Main engine')
 
         # Test vehicle with no owner
         self.vehicle.owner = None
         self.vehicle.save()
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data['detail'], 'Access denied')
+        self.assertEqual(response.data['detail'],
+                         'Access denied - insufficient write permissions for component Main engine')
 
     def test_component_detail_validation_patch_scenarios(self):
         """
@@ -492,3 +496,206 @@ class ComponentViewsTests(APITestCase):
         response = self.client.patch(invalid_type_url, {'status': 0.5})
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn('detail', response.data)
+
+    def test_component_permissions(self):
+        """
+        Scenario: Users with different permissions try to access components
+        Given users with different permission levels
+        When they attempt to access components
+        Then they receive appropriate responses based on their permissions
+        """
+        # Create a user with read permission
+        read_user = User.objects.create_user(username='readuser', password='testpass')
+        read_permission = ComponentPermission.objects.create(
+            component=self.engine,
+            user=read_user,
+            permission_type='read'
+        )
+
+        # Create a user with write permission
+        write_user = User.objects.create_user(username='writeuser', password='testpass')
+        write_permission = ComponentPermission.objects.create(
+            component=self.engine,
+            user=write_user,
+            permission_type='write'
+        )
+
+        # Test read user access
+        self.client.force_authenticate(user=read_user)
+
+        # Should succeed for GET requests
+        response = self.client.get(self._get_component_detail_url(
+            self.vehicle.vin, 'Engine', 'Main engine'
+        ))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Should fail for PATCH requests
+        response = self.client.patch(
+            self._get_component_detail_url(self.vehicle.vin, 'Engine', 'Main engine'),
+            {'status': 0.5}
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Test write user access
+        self.client.force_authenticate(user=write_user)
+
+        # Should succeed for both GET and PATCH
+        response = self.client.get(self._get_component_detail_url(
+            self.vehicle.vin, 'Engine', 'Main engine'
+        ))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.patch(
+            self._get_component_detail_url(self.vehicle.vin, 'Engine', 'Main engine'),
+            {'status': 0.5}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_component_type_permission_filtering(self):
+        """
+        Scenario: User with mixed permissions accesses component types
+        Given a user with different permissions for different components
+        When they request components by type
+        Then they only receive components they have permission for
+        """
+        mixed_user = User.objects.create_user(username='mixeduser', password='testpass')
+
+        # Give read access to engine
+        ComponentPermission.objects.create(
+            component=self.engine,
+            user=mixed_user,
+            permission_type='read'
+        )
+
+        # Give write access to two tires, no access to others
+        ComponentPermission.objects.create(
+            component=self.tires[0],
+            user=mixed_user,
+            permission_type='write'
+        )
+        ComponentPermission.objects.create(
+            component=self.tires[1],
+            user=mixed_user,
+            permission_type='write'
+        )
+
+        self.client.force_authenticate(user=mixed_user)
+
+        # Test engine access (read permission)
+        response = self.client.get(self._get_component_type_url(self.vehicle.vin, 'Engine'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)  # Should see the engine
+
+        # Test tire access (mixed permissions)
+        response = self.client.get(self._get_component_type_url(self.vehicle.vin, 'Tire'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)  # Should see only the two tires with permissions
+
+    def test_component_bulk_update_with_permissions(self):
+        """
+        Scenario: User with write permission updates multiple components
+        Given a user with write permission to some components
+        When they attempt to update all components of a type
+        Then only components they have write permission for are updated
+        """
+        write_user = User.objects.create_user(username='writeuser', password='testpass')
+
+        # Give write permission to two tires only
+        ComponentPermission.objects.create(
+            component=self.tires[0],
+            user=write_user,
+            permission_type='write'
+        )
+        ComponentPermission.objects.create(
+            component=self.tires[1],
+            user=write_user,
+            permission_type='write'
+        )
+
+        self.client.force_authenticate(user=write_user)
+
+        # Attempt to update all tires
+        response = self.client.patch(
+            self._get_component_type_url(self.vehicle.vin, 'Tire'),
+            {'status': 0.5}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)  # Only two tires should be updated
+
+        # Verify that only the permitted tires were updated
+        self.tires[0].refresh_from_db()
+        self.tires[1].refresh_from_db()
+        self.tires[2].refresh_from_db()
+        self.assertEqual(self.tires[0].status, 0.5)
+        self.assertEqual(self.tires[1].status, 0.5)
+        self.assertEqual(self.tires[2].status, 0.9)  # Original status
+
+    def test_component_list_permission_filtering(self):
+        """
+        Scenario: Users with different permissions list all components
+        Given users with different levels of access
+        When they request the full component list
+        Then they only receive components they have permission for
+        """
+        # Create a user with mixed permissions
+        mixed_user = User.objects.create_user(username='mixeduser', password='testpass')
+
+        # Give read access to engine
+        ComponentPermission.objects.create(
+            component=self.engine,
+            user=mixed_user,
+            permission_type='read'
+        )
+
+        # Give write access to one tire
+        ComponentPermission.objects.create(
+            component=self.tires[0],
+            user=mixed_user,
+            permission_type='write'
+        )
+
+        self.client.force_authenticate(user=mixed_user)
+
+        # Test listing all components
+        response = self.client.get(self._get_component_list_url(self.vehicle.vin))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Should only see components they have permission for
+        self.assertEqual(len(response.data), 2)  # 1 engine + 1 tire
+
+        # Verify the response contains the correct components
+        component_names = {comp['name'] for comp in response.data}
+        self.assertIn('Main engine', component_names)
+        self.assertIn('Tire 1', component_names)
+
+    def test_permission_inheritance(self):
+        """
+        Scenario: Test permission inheritance from vehicle owner
+        Given a vehicle owner
+        When they attempt various component operations
+        Then they have full access regardless of explicit component permissions
+        """
+        # Remove any existing permissions
+        ComponentPermission.objects.all().delete()
+
+        self.client.force_authenticate(user=self.user)  # Vehicle owner
+
+        # Test read access
+        response = self.client.get(self._get_component_list_url(self.vehicle.vin))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 5)  # Should see all components
+
+        # Test write access to individual component
+        response = self.client.patch(
+            self._get_component_detail_url(self.vehicle.vin, 'Engine', 'Main engine'),
+            {'status': 0.5}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Test write access to component type
+        response = self.client.patch(
+            self._get_component_type_url(self.vehicle.vin, 'Tire'),
+            {'status': 0.7}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
