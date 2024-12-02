@@ -52,6 +52,18 @@ class VehicleViewSet(ViewSet):
             raise PermissionDenied("You are not the owner of this vehicle")
         return vehicle
 
+    def vin_is_valid(self, vin: str) -> bool:
+        """
+        Checks in the VIN provided is in valid format
+
+        Args:
+            vin: Vehicle Identification Number
+
+        Returns:
+            Bool: Whether VIN is valid
+        """
+        return re.match(Vehicle.VIN_PATTERN, vin.upper()) is not None
+        
     @extend_schema(
         request=None,
         summary="Take ownership of a vehicle",
