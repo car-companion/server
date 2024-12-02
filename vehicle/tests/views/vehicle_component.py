@@ -20,21 +20,21 @@ class ComponentViewsTests(APITestCase):
 
         # Create base data
         self.manufacturer = Manufacturer.objects.create(
-            name='TestMake',
+            name='Jeep',
             country_code='US'
         )
         self.model = VehicleModel.objects.create(
-            name='TestModel',
+            name='Avenger',
             manufacturer=self.manufacturer
         )
         self.color = Color.objects.create(
-            name='TestColor',
+            name='Black',
             hex_code='#000000'
         )
 
         # Create vehicles
         self.vehicle = Vehicle.objects.create(
-            vin='WB10175A14ZL30042',
+            vin='JH4KA7650NC040097',
             year_built=2020,
             model=self.model,
             outer_color=self.color,
@@ -43,7 +43,7 @@ class ComponentViewsTests(APITestCase):
         )
 
         self.empty_vehicle = Vehicle.objects.create(
-            vin='WB10175A14ZL30043',
+            vin='19UUB3F3XFA811288',
             year_built=2020,
             model=self.model,
             outer_color=self.color,
@@ -73,186 +73,197 @@ class ComponentViewsTests(APITestCase):
 
         self.client = APIClient()
 
-    def test_list_components_authenticated_owner(self):
+    # Base Helper Methods
+    def _get_component_list_url(self, vin):
+        return reverse('vehicle:components:component-list', kwargs={'vin': vin})
+
+    def _get_component_type_url(self, vin, type_name):
+        return reverse('vehicle:components:component-by-type',
+                       kwargs={'vin': vin, 'type_name': type_name})
+
+    def _get_component_detail_url(self, vin, type_name, name):
+        return reverse('vehicle:components:component-detail',
+                       kwargs={'vin': vin, 'type_name': type_name, 'name': name})
+
+    # Component List Tests
+    def test_list_components_success(self):
         """
         Scenario: Owner requests list of all components
-        Given an authenticated user who owns the vehicle
+        Given an authenticated vehicle owner
         When they request the component list
         Then they receive all components for their vehicle
         """
-        # Given
         self.client.force_authenticate(user=self.user)
+        response = self.client.get(self._get_component_list_url(self.vehicle.vin))
 
-        # When
-        url = reverse('vehicle:components:component-list', kwargs={'vin': self.vehicle.vin})
-        response = self.client.get(url)
-
-        # Then
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 5)  # 1 engine + 4 tires
 
-    def test_list_components_authenticated_non_owner(self):
+    def test_list_components_access_scenarios(self):
         """
-        Scenario: Non-owner attempts to list components
-        Given an authenticated user who doesn't own the vehicle
-        When they request the component list
-        Then they receive a forbidden response
+        Scenario: Access control for component listing
+        Given different types of users
+        When they attempt to access the component list
+        Then they receive appropriate responses
         """
-        # Given
-        self.client.force_authenticate(user=self.other_user)
+        url = self._get_component_list_url(self.vehicle.vin)
 
-        # When
-        url = reverse('vehicle:components:component-list', kwargs={'vin': self.vehicle.vin})
+        # Test unauthorized
         response = self.client.get(url)
-
-        # Then
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_list_components_unauthenticated(self):
-        """
-        Scenario: Unauthenticated user attempts to list components
-        Given an unauthenticated user
-        When they request the component list
-        Then they receive an unauthorized response
-        """
-        # Given
-        url = reverse('vehicle:components:component-list', kwargs={'vin': self.vehicle.vin})
-
-        # When
-        response = self.client.get(url)
-
-        # Then
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_list_components_invalid_vin(self):
-        """
-        Scenario: Request with invalid VIN format
-        Given an authenticated owner
-        When they request components with an invalid VIN
-        Then they receive a bad request response
-        """
-        # Given
-        self.client.force_authenticate(user=self.user)
-        invalid_vin = 'INVALID'
-
-        # When
-        url = reverse('vehicle:components:component-list', kwargs={'vin': invalid_vin})
-        response = self.client.get(url)
-
-        # Then
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_list_components_unowned_vehicle(self):
-        """
-        Scenario: Request components for unowned vehicle
-        Given an authenticated user and a vehicle without an owner
-        When they request the component list
-        Then they receive a forbidden response
-        """
-        # Given
+        # Test non-owner
         self.client.force_authenticate(user=self.other_user)
-        self.vehicle.owner = None
-        self.vehicle.save()
-
-        # When
-        url = reverse('vehicle:components:component-list', kwargs={'vin': self.vehicle.vin})
         response = self.client.get(url)
-
-        # Then
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_components_by_type_success(self):
+        # Test unowned vehicle
+        self.vehicle.owner = None
+        self.vehicle.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # Component Type Tests
+    def test_list_components_by_type_success(self):
         """
         Scenario: Owner requests components of specific type
         Given an authenticated owner
         When they request components of a specific type
         Then they receive all matching components
         """
-        # Given
         self.client.force_authenticate(user=self.user)
+        response = self.client.get(self._get_component_type_url(self.vehicle.vin, 'Tire'))
 
-        # When
-        url = reverse('vehicle:components:component-by-type',
-                     kwargs={'vin': self.vehicle.vin, 'type_name': 'Tire'})
-        response = self.client.get(url)
-
-        # Then
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)  # 4 tires
+        self.assertEqual(len(response.data), 4)
 
-    def test_components_by_type_not_found(self):
+    def test_components_by_type_not_found_scenarios(self):
         """
-        Scenario: Owner requests non-existent component type
+        Scenario: Request components that don't exist
         Given an authenticated owner
-        When they request components of a non-existent type
-        Then they receive a not found response
+        When they request non-existent components
+        Then they receive appropriate error responses
         """
-        # Given
         self.client.force_authenticate(user=self.user)
 
-        # When
-        url = reverse('vehicle:components:component-by-type',
-                     kwargs={'vin': self.vehicle.vin, 'type_name': 'NonExistent'})
-        response = self.client.get(url)
-
-        # Then
+        # Test non-existent type
+        response = self.client.get(self._get_component_type_url(self.vehicle.vin, 'NonExistent'))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_update_component_type_status(self):
+        # Test empty type
+        empty_type = ComponentType.objects.create(name='EmptyType')
+        response = self.client.get(self._get_component_type_url(self.vehicle.vin, 'EmptyType'))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # Component Type Access Tests
+    def test_component_type_access_denied_scenarios(self):
         """
-        Scenario: Owner updates status of all components of a type
+        Scenario: Non-owner attempts to access component type
+        Given different unauthorized users
+        When they attempt to access components by type
+        Then they receive appropriate access denied responses
+        """
+        url = self._get_component_type_url(self.vehicle.vin, 'Engine')
+
+        # Test non-owner access
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['detail'], 'Access denied')
+
+        # Test vehicle with no owner
+        self.vehicle.owner = None
+        self.vehicle.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['detail'], 'Access denied')
+
+    def test_component_type_update_access_denied_scenarios(self):
+        """
+        Scenario: Non-owner attempts to update component type status
+        Given different unauthorized users
+        When they attempt to update component type status
+        Then they receive appropriate access denied responses
+        """
+        url = self._get_component_type_url(self.vehicle.vin, 'Engine')
+        payload = {'status': 0.5}
+
+        # Test non-owner update
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['detail'], 'Access denied')
+
+        # Test vehicle with no owner
+        self.vehicle.owner = None
+        self.vehicle.save()
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['detail'], 'Access denied')
+
+    def test_component_type_not_found_update_scenarios(self):
+        """
+        Scenario: Update attempts on non-existent components
         Given an authenticated owner
-        When they update the status of all components of a type
-        Then all matching components are updated
+        When they attempt to update non-existent component types
+        Then they receive appropriate not found responses
         """
-        # Given
         self.client.force_authenticate(user=self.user)
+        payload = {'status': 0.5}
 
-        # When
-        url = reverse('vehicle:components:component-by-type',
-                     kwargs={'vin': self.vehicle.vin, 'type_name': 'Tire'})
-        response = self.client.patch(url, {'status': 0.5})
+        # Test non-existent type
+        url = self._get_component_type_url(self.vehicle.vin, 'NonExistentType')
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data['detail'], 'No components found of this type')
 
-        # Then
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(all(comp['status'] == 0.5 for comp in response.data))
+        # Test empty type
+        empty_type = ComponentType.objects.create(name='EmptyType')
+        url = self._get_component_type_url(self.vehicle.vin, 'EmptyType')
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data['detail'], 'No components found of this type')
 
-    def test_update_component_type_invalid_status(self):
+    def test_component_type_validation_scenarios(self):
         """
-        Scenario: Owner attempts to update with invalid status
+        Scenario: Invalid update attempts on component types
         Given an authenticated owner
-        When they attempt to update with an invalid status value
-        Then they receive a bad request response
+        When they attempt various invalid updates
+        Then they receive appropriate validation error responses
         """
-        # Given
         self.client.force_authenticate(user=self.user)
+        url = self._get_component_type_url(self.vehicle.vin, 'Engine')
 
-        # When
-        url = reverse('vehicle:components:component-by-type',
-                     kwargs={'vin': self.vehicle.vin, 'type_name': 'Engine'})
-        response = self.client.patch(url, {'status': 'invalid'})
+        # Test invalid status values
+        invalid_status_cases = [
+            ({'status': -0.5}, "Status cannot be negative"),
+            ({'status': 1.5}, "Status cannot be greater than 1"),
+            ({'status': 'invalid'}, "Status must be a number"),
+            ({}, "Status is required"),
+            ({'invalid_field': 0.5}, "Status is required"),
+        ]
 
-        # Then
+        for payload, error_message in invalid_status_cases:
+            response = self.client.patch(url, payload)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertTrue(
+                'status' in response.data or 'detail' in response.data,
+                f"Expected 'status' or 'detail' in response, got: {response.data}"
+            )
+
+        # Test invalid VIN format with valid status
+        invalid_vin_url = self._get_component_type_url('INVALID-VIN', 'Engine')
+        response = self.client.patch(invalid_vin_url, {'status': 0.5})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
 
-    def test_empty_vehicle_components(self):
-        """
-        Scenario: Owner requests components for empty vehicle
-        Given an authenticated owner of an empty vehicle
-        When they request components by type
-        Then they receive a not found response
-        """
-        # Given
-        self.client.force_authenticate(user=self.user)
+        # Test invalid VIN characters with valid status
+        invalid_chars_url = self._get_component_type_url('WB1OI75A14ZL3004', 'Engine')
+        response = self.client.patch(invalid_chars_url, {'status': 0.5})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
 
-        # When
-        url = reverse('vehicle:components:component-by-type',
-                     kwargs={'vin': self.empty_vehicle.vin, 'type_name': 'Engine'})
-        response = self.client.get(url)
-
-        # Then
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
+    # Component Detail Tests
     def test_component_detail_success(self):
         """
         Scenario: Owner requests specific component details
@@ -260,64 +271,224 @@ class ComponentViewsTests(APITestCase):
         When they request details of a specific component
         Then they receive the component details
         """
-        # Given
         self.client.force_authenticate(user=self.user)
+        response = self.client.get(
+            self._get_component_detail_url(self.vehicle.vin, 'Engine', 'Main engine')
+        )
 
-        # When
-        url = reverse('vehicle:components:component-detail',
-                     kwargs={
-                         'vin': self.vehicle.vin,
-                         'type_name': 'Engine',
-                         'name': 'Main engine'
-                     })
-        response = self.client.get(url)
-
-        # Then
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], 'Main engine')
         self.assertEqual(response.data['status'], 0.8)
 
-    def test_update_component_status_success(self):
+    # Status Update Tests
+    def test_update_status_success_scenarios(self):
         """
-        Scenario: Owner updates specific component status
+        Scenario: Valid status updates
         Given an authenticated owner
-        When they update a specific component's status
-        Then the component status is updated
+        When they update component status with valid values
+        Then the updates are successful
         """
-        # Given
         self.client.force_authenticate(user=self.user)
 
-        # When
-        url = reverse('vehicle:components:component-detail',
-                     kwargs={
-                         'vin': self.vehicle.vin,
-                         'type_name': 'Engine',
-                         'name': 'Main engine'
-                     })
-        response = self.client.patch(url, {'status': 0.6})
-
-        # Then
+        # Individual component update
+        response = self.client.patch(
+            self._get_component_detail_url(self.vehicle.vin, 'Engine', 'Main engine'),
+            {'status': 0.6}
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['status'], 0.6)
 
-    def test_update_component_status_invalid(self):
+        # Component type update
+        response = self.client.patch(
+            self._get_component_type_url(self.vehicle.vin, 'Tire'),
+            {'status': 0.5}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(all(comp['status'] == 0.5 for comp in response.data))
+
+    # Validation Tests
+    def test_vin_validation_scenarios(self):
         """
-        Scenario: Owner attempts to set invalid component status
-        Given an authenticated owner
-        When they attempt to set an invalid status value
-        Then they receive a validation error
+        Scenario: VIN validation
+        Given various invalid VIN formats
+        When making requests with these VINs
+        Then appropriate validation errors are returned
         """
-        # Given
         self.client.force_authenticate(user=self.user)
+        invalid_vins = ['INVALID', 'WB1OI75A14ZL3004']  # Too short, Invalid chars
 
-        # When
-        url = reverse('vehicle:components:component-detail',
-                     kwargs={
-                         'vin': self.vehicle.vin,
-                         'type_name': 'Engine',
-                         'name': 'Main engine'
-                     })
-        response = self.client.patch(url, {'status': 1.5})  # Invalid value > 1
+        for vin in invalid_vins:
+            # Test list endpoint
+            response = self.client.get(self._get_component_list_url(vin))
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        # Then
+            # Test type endpoint
+            response = self.client.get(self._get_component_type_url(vin, 'Engine'))
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+            # Test detail endpoint
+            response = self.client.get(
+                self._get_component_detail_url(vin, 'Engine', 'Main engine')
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_status_validation_scenarios(self):
+        """
+        Scenario: Status value validation
+        Given various invalid status values
+        When attempting to update component status
+        Then appropriate validation errors are returned
+        """
+        self.client.force_authenticate(user=self.user)
+        invalid_status_values = [
+            -0.5,  # Negative
+            1.5,  # Above maximum
+            'invalid'  # Non-numeric
+        ]
+
+        for invalid_status in invalid_status_values:
+            # Test individual component update
+            response = self.client.patch(
+                self._get_component_detail_url(self.vehicle.vin, 'Engine', 'Main engine'),
+                {'status': invalid_status}
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+            # Test component type update
+            response = self.client.patch(
+                self._get_component_type_url(self.vehicle.vin, 'Engine'),
+                {'status': invalid_status}
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_component_detail_access_denied_get_scenarios(self):
+        """
+        Scenario: Unauthorized users attempt to get component details
+        Given different unauthorized users
+        When they attempt to get component details
+        Then they receive appropriate access denied responses
+        """
+        url = self._get_component_detail_url(
+            self.vehicle.vin,
+            'Engine',
+            'Main engine'
+        )
+
+        # Test unauthenticated access
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Test non-owner access
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['detail'], 'Access denied')
+
+        # Test vehicle with no owner
+        self.vehicle.owner = None
+        self.vehicle.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['detail'], 'Access denied')
+
+    def test_component_detail_access_denied_patch_scenarios(self):
+        """
+        Scenario: Unauthorized users attempt to update component status
+        Given different unauthorized users
+        When they attempt to update component status
+        Then they receive appropriate access denied responses
+        """
+        url = self._get_component_detail_url(
+            self.vehicle.vin,
+            'Engine',
+            'Main engine'
+        )
+        payload = {'status': 0.5}
+
+        # Test unauthenticated access
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Test non-owner access
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['detail'], 'Access denied')
+
+        # Test vehicle with no owner
+        self.vehicle.owner = None
+        self.vehicle.save()
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['detail'], 'Access denied')
+
+    def test_component_detail_validation_patch_scenarios(self):
+        """
+        Scenario: Invalid update attempts on component details
+        Given an authenticated owner
+        When they attempt various invalid updates
+        Then they receive appropriate validation error responses
+        """
+        self.client.force_authenticate(user=self.user)
+        base_url = self._get_component_detail_url(
+            self.vehicle.vin,
+            'Engine',
+            'Main engine'
+        )
+
+        # Test various invalid status values
+        invalid_status_cases = [
+            ({'status': -0.5}, "Status cannot be negative"),
+            ({'status': 1.5}, "Status cannot be greater than 1"),
+            ({'status': 'invalid'}, "Status must be a number"),
+            ({}, "Status is required"),
+            ({'invalid_field': 0.5}, "Status is required"),
+        ]
+
+        for payload, error_message in invalid_status_cases:
+            response = self.client.patch(base_url, payload)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertTrue(
+                'status' in response.data or 'detail' in response.data,
+                f"Expected 'status' or 'detail' in response, got: {response.data}"
+            )
+
+        # Test invalid VIN format
+        invalid_vin_url = self._get_component_detail_url(
+            'INVALID-VIN',
+            'Engine',
+            'Main engine'
+        )
+        response = self.client.patch(invalid_vin_url, {'status': 0.5})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
+
+        # Test invalid VIN characters
+        invalid_chars_url = self._get_component_detail_url(
+            'WB1OI75A14ZL3004',  # Contains invalid characters I and O
+            'Engine',
+            'Main engine'
+        )
+        response = self.client.patch(invalid_chars_url, {'status': 0.5})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
+
+        # Test non-existent component
+        not_found_url = self._get_component_detail_url(
+            self.vehicle.vin,
+            'Engine',
+            'NonExistentComponent'
+        )
+        response = self.client.patch(not_found_url, {'status': 0.5})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('detail', response.data)
+
+        # Test non-existent component type
+        invalid_type_url = self._get_component_detail_url(
+            self.vehicle.vin,
+            'NonExistentType',
+            'Main engine'
+        )
+        response = self.client.patch(invalid_type_url, {'status': 0.5})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('detail', response.data)
