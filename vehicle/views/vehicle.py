@@ -147,7 +147,8 @@ class VehicleViewSet(ViewSet):
     @extend_schema(
         summary="List owned vehicles",
         description="Get a list of all vehicles owned by the current user",
-        responses={200: VehicleSerializer(many=True)}
+        responses={200: VehicleSerializer(many=True)},
+        tags=['Vehicle']
     )
     @action(detail=False, methods=["get"])
     def my_vehicles(self, request: Request) -> Response:
