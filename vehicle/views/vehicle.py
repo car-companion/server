@@ -120,7 +120,8 @@ class VehicleViewSet(ViewSet):
             400: OpenApiResponse(description="VIN is invalid"),
             403: OpenApiResponse(description="Not the owner"),
             404: OpenApiResponse(description="Vehicle not found"),
-        }
+        },
+        tags=['Vehicle']
     )
     @action(detail=True, methods=["delete"])
     def disown(self, request: Request, vin: str) -> Response:
