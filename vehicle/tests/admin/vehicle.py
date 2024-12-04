@@ -30,6 +30,7 @@ class VehicleAdminTests(TestCase):
             name='BMW',
             country_code='DE'
         )
+
         self.vehicle_model = VehicleModel.objects.create(
             name='X5',
             manufacturer=self.manufacturer
@@ -96,10 +97,10 @@ class VehicleAdminTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'WBA12345678901234')  # VIN
-        self.assertContains(response, '2023')  # Year
-        self.assertContains(response, 'X5')  # Model
-        self.assertContains(response, 'Bmw')  # Manufacturer
-        self.assertContains(response, '0')  # Components count
+        self.assertContains(response, 'data-label="Year Built">2023')  # Year
+        self.assertContains(response, 'data-label="Model">X5')  # Model
+        self.assertContains(response, 'data-label="Manufacturer">Bmw')  # Manufacturer
+        self.assertContains(response, 'data-label="Components">0')  # Components count
 
     def test_filters(self):
         """
@@ -311,3 +312,72 @@ class VehicleAdminTests(TestCase):
             self.vehicle_admin.get_components_count(self.vehicle),
             1
         )
+
+    def test_create_vehicle_creates_default_components(self):
+        """
+        Scenario: Testing automatic creation of default components upon vehicle creation
+        Given a vehicle model with default components
+        When creating a new vehicle
+        Then default components should be automatically created
+        """
+        new_vehicle_data = {
+            'vin': 'WBA98765432109876',
+            'year_built': 2023,
+            'model': self.vehicle_model.id,
+            'outer_color': self.exterior_color.id,
+            'interior_color': self.interior_color.id,
+            'components-TOTAL_FORMS': '0',
+            'components-INITIAL_FORMS': '0',
+            'components-MIN_NUM_FORMS': '0',
+            'components-MAX_NUM_FORMS': '1000',
+        }
+
+        url = self.get_admin_url('add')
+        response = self.client.post(url, new_vehicle_data)
+        self.assertEqual(response.status_code, 302)  # Successful redirect
+
+        # Check if default components were created
+        new_vehicle = Vehicle.objects.get(vin='WBA98765432109876')
+        self.assertEqual(new_vehicle.components.count(), len(self.model_components))
+
+    def test_update_vehicle_does_not_create_default_components(self):
+        """
+        Scenario: Testing that updating a vehicle does not create default components
+        Given a vehicle with components
+        When the vehicle is updated
+        Then default components should not be created again
+        """
+        # Pre-populate components
+        for model_component in self.model_components:
+            VehicleComponent.objects.create(
+                vehicle=self.vehicle,
+                name=model_component.name,
+                component_type=model_component.component_type,
+                status=0.5
+            )
+
+        initial_component_count = self.vehicle.components.count()
+
+        # Update the vehicle
+        update_data = {
+            'vin': self.vehicle.vin,
+            'id': self.vehicle.vin,  # Include 'id' to indicate update
+            'year_built': 2024,
+            'model': self.vehicle.model.id,
+            'outer_color': self.vehicle.outer_color.id,
+            'interior_color': self.vehicle.interior_color.id,
+            'components-TOTAL_FORMS': '0',
+            'components-INITIAL_FORMS': '0',
+            'components-MIN_NUM_FORMS': '0',
+            'components-MAX_NUM_FORMS': '1000',
+        }
+
+        url = self.get_admin_url('change', self.vehicle.vin)
+        response = self.client.post(url, update_data)
+        self.assertEqual(response.status_code, 302)  # Successful redirect
+
+        # Refresh from database
+        self.vehicle.refresh_from_db()
+
+        # Ensure components count remains the same
+        self.assertEqual(self.vehicle.components.count(), initial_component_count)

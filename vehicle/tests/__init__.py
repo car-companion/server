@@ -7,6 +7,13 @@ from .models.manufacturer import ManufacturerModelTests
 from .models.vehicle_model import VehicleModelTests, ModelComponentTests
 from .models.component_type import ComponentTypeModelTests
 from .models.vehicle import VehicleTests, VehicleComponentTests
+from .models.permission import ComponentPermissionModelTests
+from .serializers.vehicle import ColorSerializerTests, VehicleModelSerializerTests, VehicleSerializerTests, \
+    NicknameSerializerTests
+from .serializers.vehicle_component import ComponentTypeSerializerTests, ComponentSerializerTests, \
+    ComponentStatusUpdateSerializerTests
+from .views.vehicle import VehicleViewSetTests
+from .views.vehicle_component import ComponentViewsTests
 
 __all__ = ['ColorAdminTests',
            'ColorModelTests',
@@ -18,5 +25,15 @@ __all__ = ['ColorAdminTests',
            'ModelComponentTests',
            'ComponentTypeModelTests',
            'VehicleTests',
-           'VehicleComponentTests'
+           'VehicleComponentTests',
+           'ComponentPermissionModelTests',
+           'ColorSerializerTests',
+           'VehicleModelSerializerTests',
+           'VehicleSerializerTests',
+           'NicknameSerializerTests',
+           'VehicleViewSetTests',
+           'ComponentTypeSerializerTests',
+           'ComponentSerializerTests',
+           'ComponentStatusUpdateSerializerTests',
+           'ComponentViewsTests'
            ]

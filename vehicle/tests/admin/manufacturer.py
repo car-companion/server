@@ -61,10 +61,10 @@ class ManufacturerAdminTests(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Bmw')
-        self.assertContains(response, 'DE')
+        self.assertRegex(response.content, 'data-label="name"><a[^>]*>Bmw'.encode())
+        self.assertContains(response, 'data-label="country code">DE')
         self.assertContains(response, 'Visit Website')
-        self.assertContains(response, '2')  # Number of models
+        self.assertContains(response, 'data-label="Models Count"><span title="2 models">2')
 
     def test_models_count_display(self):
         """
@@ -79,8 +79,7 @@ class ManufacturerAdminTests(TestCase):
         url = self.get_admin_url('changelist')
         response = self.client.get(url)
 
-        self.assertContains(response, '3')  # Updated count
-        self.assertContains(response, '3 models')  # Title attribute
+        self.assertContains(response, 'data-label="Models Count"><span title="3 models">3')  # Title and count attributes
 
     def test_website_display_with_and_without_url(self):
         """

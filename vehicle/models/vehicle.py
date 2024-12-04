@@ -69,7 +69,7 @@ class Vehicle(models.Model):
                 message=_(f"Year must be {FIRST_MODEL_YEAR} or later.")
             ),
             MaxValueValidator(
-                get_max_year(), # DRF-Spectacular doesn't like functions here so we will just call it now
+                get_max_year(),  # DRF-Spectacular doesn't like functions here so we will just call it now
                 message=_("Year cannot be in the future.")
             )
         ],
@@ -173,6 +173,9 @@ class Vehicle(models.Model):
         errors = {}
 
         # Validate year_built
+        if self.year_built is None:
+            errors['year_built'] = _("Year built is required.")
+
         if self.year_built:
             if self.year_built > get_max_year():
                 errors['year_built'] = _("Year cannot be in the future.")
@@ -180,7 +183,7 @@ class Vehicle(models.Model):
                 errors['year_built'] = _(f"Year must be {self.FIRST_MODEL_YEAR} or later.")
 
         # Validate VIN format and standardization
-        if self.vin:
+        if self.vin :
             # Convert to uppercase for validation
             self.vin = self.vin.upper()
             # Check for invalid characters (I, O, Q)
@@ -218,8 +221,7 @@ class Vehicle(models.Model):
         - Standardizes nickname format
         """
         # Standardize VIN
-        if self.vin:
-            self.vin = self.vin.upper()
+        self.vin = self.vin.upper()
 
         # Standardize nickname
         if self.nickname:
@@ -314,6 +316,10 @@ class VehicleComponent(TimeStampedModel):
             models.Index(fields=['component_type'], name='vehicle_component_type_idx'),
             models.Index(fields=['vehicle'], name='vehicle_component_vehicle_idx'),
             models.Index(fields=['status'], name='vehicle_component_status_idx'),
+        ]
+        permissions = [
+            ('view_status', 'Can view component status'),
+            ('change_status', 'Can change component status'),
         ]
 
     def clean(self):

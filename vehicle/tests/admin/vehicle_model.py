@@ -83,9 +83,9 @@ class VehicleModelAdminTests(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'X5')
-        self.assertContains(response, 'Bmw')
-        self.assertContains(response, '2')  # Components count
+        self.assertRegex(response.content, 'data-label="name"><a[^>]*>X5'.encode())
+        self.assertContains(response, 'data-label="manufacturer">Bmw')
+        self.assertContains(response, 'data-label="Default Components">2')  # Components count
 
     def test_manufacturer_filter(self):
         """
@@ -104,13 +104,13 @@ class VehicleModelAdminTests(TestCase):
 
         # Test BMW models
         response = self.client.get(url, {'manufacturer__id__exact': self.manufacturer.id})
-        self.assertContains(response, 'X5')
-        self.assertNotContains(response, 'A4')
+        self.assertRegex(response.content, 'data-label="name"><a[^>]*>X5'.encode())
+        self.assertNotRegex(response.content, 'data-label="name"><a[^>]*>A4'.encode())
 
         # Test Audi models
         response = self.client.get(url, {'manufacturer__id__exact': self.another_manufacturer.id})
-        self.assertContains(response, 'A4')
-        self.assertNotContains(response, 'X5')
+        self.assertRegex(response.content, 'data-label="name"><a[^>]*>A4'.encode())
+        self.assertNotRegex(response.content, 'data-label="name"><a[^>]*>X5'.encode())
 
     def test_search_functionality(self):
         """
@@ -142,9 +142,9 @@ class VehicleModelAdminTests(TestCase):
 
                 self.assertEqual(response.status_code, 200)
                 for term in should_contain:
-                    self.assertContains(response, term)
+                    self.assertRegex(response.content, f'data-label="name"><a[^>]+>{term}'.encode())
                 for term in should_not_contain:
-                    self.assertNotContains(response, term)
+                    self.assertNotRegex(response.content, f'data-label="name"><a[^>]+>{term}'.encode())
 
     def test_inline_components(self):
         """
@@ -178,7 +178,7 @@ class VehicleModelAdminTests(TestCase):
         url = self.get_admin_url('changelist')
         response = self.client.get(url)
 
-        self.assertContains(response, '3')  # Updated count
+        self.assertContains(response, 'data-label="Default Components">3')  # Updated count
 
     def test_inline_validation(self):
         """
