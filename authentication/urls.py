@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import activate_account
+from authentication.views import activate_account
 
 urlpatterns = [
-    path('activate/<uid>/<token>/', activate_account, name='activate_account'),
+    path('users/activate/<uid>/<token>/', activate_account, name='activate_account'),
 ]
