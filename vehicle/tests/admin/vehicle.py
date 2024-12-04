@@ -97,10 +97,10 @@ class VehicleAdminTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'WBA12345678901234')  # VIN
-        self.assertContains(response, '2023')  # Year
-        self.assertContains(response, 'X5')  # Model
-        self.assertContains(response, 'Bmw')  # Manufacturer
-        self.assertContains(response, '0')  # Components count
+        self.assertContains(response, 'data-label="Year Built">2023')  # Year
+        self.assertContains(response, 'data-label="Model">X5')  # Model
+        self.assertContains(response, 'data-label="Manufacturer">Bmw')  # Manufacturer
+        self.assertContains(response, 'data-label="Components">0')  # Components count
 
     def test_filters(self):
         """
