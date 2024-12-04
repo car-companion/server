@@ -13,7 +13,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 import environ
-from django.conf.global_settings import INTERNAL_IPS
+from django.conf.global_settings import INTERNAL_IPS, EMAIL_USE_SSL
+from django.conf.urls.static import static
 
 env = environ.Env()
 
@@ -34,9 +35,15 @@ DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
+
 # Application definition
 
 INSTALLED_APPS = [
+    "unfold",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,8 +52,17 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "debug_toolbar",
     "rest_framework",
+    'django_filters',
     "djoser",
     'drf_spectacular',
+    'health_check',
+    'health_check.db',
+    'health_check.cache',
+    'health_check.storage',
+    'health_check.contrib.migrations',
+    'colorfield',
+    'vehicle',
+    'authentication'
 ]
 
 MIDDLEWARE = [
@@ -146,6 +162,7 @@ INTERNAL_IPS = [
 
 # Rest framework + Djoser settings
 REST_FRAMEWORK = {
+    'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -157,10 +174,27 @@ SIMPLE_JWT = {
 }
 
 DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'SEND_ACTIVATION_EMAIL': True,
+    'ACTIVATION_URL': 'api/auth/users/activate/{uid}/{token}/',
     'SERIALIZERS': {
         'user_create': 'core.serializers.UserRegistrationSerializer',
     }
 }
+
+# Email settings (some fields might need to be changed as they were used like this to test the email verification feature)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # 'smtp' must be set to 'console' if debugging on the terminal needed
+EMAIL_HOST = 'localhost'  # Must be set to the email provider's SMTP server (use localhost to use smtp4dev)
+EMAIL_PORT = 25
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = 'test@example.com'
+#EMAIL_HOST_USER = 'your-email@gmail.com'  # Replace with email
+#EMAIL_HOST_PASSWORD = 'your-email-password'  # Replace with your email's app password
+
+# Frontend settings for activation link
+FRONTEND_URL = 'http://localhost:8000'  # Must be set to our frontend domain
+
 
 # OpenAPI schema generation
 SPECTACULAR_SETTINGS = {
@@ -168,4 +202,12 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API for Car Companion project',
     'VERSION': '1.0.0',
     # 'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Unfold settings
+UNFOLD = {
+    "SITE_TITLE": "Car Companion",
+    "SITE_HEADER": "Car Companion",
+    "SITE_URL": "/",
+    "SITE_ICON": None,  # Add your icon path if needed
 }
