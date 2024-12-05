@@ -545,3 +545,81 @@ class VehicleComponentTests(TestCase):
             avg_status=Avg('status')
         )['avg_status']
         self.assertIsNotNone(avg_status)
+
+    def test_year_validation_with_none(self):
+        """
+        Scenario: Testing year validation with None value
+        Given a vehicle with year_built set to None
+        When validating the vehicle
+        Then it should raise ValidationError
+        """
+        vehicle = Vehicle(
+            vin="WBA12345678901234",
+            year_built=None,
+            model=self.vehicle_model,
+            outer_color=self.exterior_color,
+            interior_color=self.interior_color
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            vehicle.clean()
+        self.assertIn('Year built is required.', str(context.exception))
+
+    def test_vin_validation_with_none(self):
+        """
+        Scenario: Testing VIN validation with None value
+        Given a vehicle with VIN set to None
+        When validating the vehicle
+        Then it should raise ValidationError
+        """
+        vehicle = Vehicle(
+            vin=None,
+            year_built=2023,
+            model=self.vehicle_model,
+            outer_color=self.exterior_color,
+            interior_color=self.interior_color
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            vehicle.clean()
+        self.assertIn('VIN is required.', str(context.exception))
+
+    def test_string_representation_with_owner(self):
+        """
+        Scenario: Testing string representation with owner
+        Given a vehicle with an owner
+        When converting to string
+        Then it should include owner information
+        """
+        from django.contrib.auth.models import User
+        owner = User.objects.create(username='testuser')
+        vehicle = Vehicle.objects.create(
+            vin="NBA88888888888888",
+            year_built=2023,
+            model=self.vehicle_model,
+            outer_color=self.exterior_color,
+            interior_color=self.interior_color,
+            owner=owner
+        )
+
+        expected_str = f'2023 Bmw (DE) X5 NBA88888888888888 [Owned by: testuser]'
+        self.assertEqual(str(vehicle), expected_str)
+
+    def test_vin_validation_with_empty_string(self):
+        """
+        Scenario: Testing VIN validation with empty string
+        Given a vehicle with VIN as empty string
+        When validating the vehicle
+        Then it should raise ValidationError
+        """
+        vehicle = Vehicle(
+            vin='',  # Empty string will make self.vin falsy
+            year_built=2023,
+            model=self.vehicle_model,
+            outer_color=self.exterior_color,
+            interior_color=self.interior_color
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            vehicle.clean()
+        self.assertIn('VIN is required.', str(context.exception))

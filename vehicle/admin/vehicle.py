@@ -100,13 +100,10 @@ class VehicleAdmin(ModelAdmin, GuardedModelAdmin):
         Override save_related to create default components after saving the vehicle
         but before saving inline formsets.
         """
-        creating = not change
-
-        # First save the vehicle
         super().save_related(request, form, formsets, change)
 
         # If this is a new vehicle, create components from model defaults
-        if creating:
+        if not change:
             model = form.instance.model
             for model_component in model.default_components.all():
                 VehicleComponent.objects.get_or_create(
