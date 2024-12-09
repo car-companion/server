@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import environ
 from django.conf.global_settings import INTERNAL_IPS
+from django.conf.urls.static import static
 
 env = environ.Env()
 
@@ -34,9 +35,16 @@ DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
+
 # Application definition
 
 INSTALLED_APPS = [
+    "unfold",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
+    "unfold.contrib.guardian",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,8 +53,17 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "debug_toolbar",
     "rest_framework",
+    'django_filters',
     "djoser",
     'drf_spectacular',
+    'health_check',
+    'health_check.db',
+    'health_check.cache',
+    'health_check.storage',
+    'health_check.contrib.migrations',
+    'colorfield',
+    'guardian',
+    'vehicle'
 ]
 
 MIDDLEWARE = [
@@ -94,6 +111,12 @@ DATABASES = {
         "PASSWORD": env("DB_PASSWORD"),
     }
 }
+
+# Django-guardian permissions
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend', # this is default
+    'guardian.backends.ObjectPermissionBackend',
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -146,6 +169,7 @@ INTERNAL_IPS = [
 
 # Rest framework + Djoser settings
 REST_FRAMEWORK = {
+    'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -168,4 +192,12 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API for Car Companion project',
     'VERSION': '1.0.0',
     # 'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Unfold settings
+UNFOLD = {
+    "SITE_TITLE": "Car Companion",
+    "SITE_HEADER": "Car Companion",
+    "SITE_URL": "/",
+    "SITE_ICON": None,  # Add your icon path if needed
 }
