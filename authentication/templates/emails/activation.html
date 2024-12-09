@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Activate Your Account</title>
+</head>
+<body>
+    <h2>Welcome to Car Companion!</h2>
+    <p>Hi {{ user.first_name }},</p>
+    <p>Thanks for signing up to CarCompanionApp! Please click the link below to activate your account:</p>
+    <a href="{{ protocol }}://{{ domain }}{% url 'auth:activate_account' uid=uid token=token %}">
+        Activate your account
+    </a>
+    <p>If you didn't request this, please ignore this email.</p>
+    <p>Thanks,</p>
+    <p>The Car Companion Team</p>
+</body>
+</html>

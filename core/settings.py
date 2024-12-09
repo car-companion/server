@@ -179,7 +179,10 @@ DJOSER = {
     'ACTIVATION_URL': 'api/auth/users/activate/{uid}/{token}/',
     'SERIALIZERS': {
         'user_create': 'core.serializers.UserRegistrationSerializer',
-    }
+    },
+    'EMAIL': {
+        'activation': 'authentication.emails.CustomActivationEmail',
+    },
 }
 
 # Email settings (some fields might need to be changed as they were used like this to test the email verification feature)
@@ -194,6 +197,12 @@ DEFAULT_FROM_EMAIL = 'test@example.com'
 
 # Frontend settings for activation link
 FRONTEND_URL = 'http://localhost:8000'  # Must be set to our frontend domain
+
+# Templates for emails sent to user for account activation
+TEMPLATED_EMAIL_BACKEND = 'templated_email.backends.vanilla_django.TemplateBackend'
+TEMPLATED_EMAIL_FILE_EXTENSION = 'html'  # Email templates will use the .html extension
+#TEMPLATED_EMAIL_TEMPLATE_DIR = 'templates/'  # Base directory for email templates (inside the 'templates' folder)
+
 
 
 # OpenAPI schema generation

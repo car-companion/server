@@ -22,6 +22,8 @@ django-filter = "^24.3"
 django-model-utils = "^5.0.0"
 coverage = "^7.6.4"
 django-colorfield = "^0.11.0"
+django-templated-email = "3.0.1"
+django-render-block = "0.10"
 
 [build-system]
 requires = ["poetry-core"]

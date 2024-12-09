@@ -483,6 +483,36 @@ files = [
 Django = ">=3.2"
 
 [[package]]
+name = "django-render-block"
+version = "0.10"
+description = "Render a particular block from a template to a string."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "django_render_block-0.10-py3-none-any.whl", hash = "sha256:4deeec70a360aa90385443aeae1213ffb2acbfe2b5fb09d4afe47e75a29240c3"},
+    {file = "django_render_block-0.10.tar.gz", hash = "sha256:23fbc9cfed17aac47e936e65f0c29ae186765a41234cdc8dbf88d4a9377fdd76"},
+]
+
+[package.dependencies]
+django = ">=3.2"
+
+[package.extras]
+dev = ["Jinja2 (>=2.8)"]
+
+[[package]]
+name = "django-templated-email"
+version = "3.0.1"
+description = "A Django oriented templated / transaction email abstraction"
+optional = false
+python-versions = "*"
+files = [
+    {file = "django-templated-email-3.0.1.tar.gz", hash = "sha256:432430293b0be35495faa23fcd8d60b33ff59d9a10b3366d7e01f75d9ff843f2"},
+]
+
+[package.dependencies]
+django-render-block = ">=0.5"
+
+[[package]]
 name = "django-templated-mail"
 version = "1.1.1"
 description = "Send emails using Django template system."
@@ -1147,4 +1177,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b93cf23a680836007892bd9708fd1bdf159e1d304b14d12e5a102eaae67b5d50"
+content-hash = "26d8c38992ae5179bbe4c884beddb184571b6d9a91322bed5ddd15a0fd67849d"
