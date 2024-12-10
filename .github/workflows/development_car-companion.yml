@@ -52,17 +52,6 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY_DEV }}
         run: |
           coverage run manage.py test --noinput
-          coverage report
-          coverage-badge -o coverage.svg
-
-      - name: Save and commit coverage badge
-        run: |
-          mv coverage.svg ./coverage-badge.svg
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "GitHub Actions"
-          git add coverage-badge.svg
-          git commit -m "Update coverage badge"
-          git push
 
       - name: Deploy to Azure Web App (only on push, not PR)
         if: github.event_name != 'pull_request'
