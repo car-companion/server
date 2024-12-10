@@ -51,7 +51,7 @@ jobs:
           DB_USER: ${{ secrets.DB_USER_DEV }}
           SECRET_KEY: ${{ secrets.SECRET_KEY_DEV }}
         run: |
-          coverage run manage.py test
+          coverage run manage.py test --noinput
           coverage report
           coverage-badge -o coverage.svg
 
