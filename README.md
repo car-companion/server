@@ -1,4 +1,6 @@
-[![Test, build and deploy Python app to Azure Web App: car-companion](https://github.com/car-companion/server/actions/workflows/main_car-companion.yml/badge.svg)](https://github.com/car-companion/server/actions/workflows/main_car-companion.yml)
+[![CI](https://github.com/car-companion/server/actions/workflows/development_car-companion.yml/badge.svg?branch=development)](https://github.com/car-companion/server/actions/workflows/development_car-companion.yml)
+![Coverage](./coverage-badge.svg)
+
 # Car Companion Backend
 
 A robust Django-based backend system for the Car Companion application, providing comprehensive vehicle management and monitoring capabilities through a RESTful API.
