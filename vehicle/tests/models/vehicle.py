@@ -279,58 +279,58 @@ class VehicleTests(TestCase):
 #                 )
 
 
-# class VehicleComponentTests(TestCase):
-#     """
-#     Test suite for the VehicleComponent model.
-#     """
+class VehicleComponentTests(TestCase):
+    """
+    Test suite for the VehicleComponent model.
+    """
 
-#     @classmethod
-#     def setUpTestData(cls):
-#         """Set up data for the entire test suite."""
-#         # Create basic vehicle
-#         cls.manufacturer = Manufacturer.objects.create(
-#             name="BMW",
-#             country_code="DE"
-#         )
-#         cls.vehicle_model = VehicleModel.objects.create(
-#             name="X5",
-#             manufacturer=cls.manufacturer
-#         )
-#         cls.exterior_color = Color.objects.create(
-#             name="Black",
-#             hex_code="#000000"
-#         )
-#         cls.interior_color = Color.objects.create(
-#             name="Beige",
-#             hex_code="#F5F5DC"
-#         )
-#         cls.vehicle = Vehicle.objects.create(
-#             vin="WBA12345678901234",
-#             year_built=2023,
-#             model=cls.vehicle_model,
-#             outer_color=cls.exterior_color,
-#             interior_color=cls.interior_color
-#         )
+    @classmethod
+    def setUpTestData(cls):
+        """Set up data for the entire test suite."""
+        # Create basic vehicle
+        cls.manufacturer = Manufacturer.objects.create(
+            name="BMW",
+            country_code="DE"
+        )
+        cls.vehicle_model = VehicleModel.objects.create(
+            name="X5",
+            manufacturer=cls.manufacturer
+        )
+        cls.exterior_color = Color.objects.create(
+            name="Black",
+            hex_code="#000000"
+        )
+        cls.interior_color = Color.objects.create(
+            name="Beige",
+            hex_code="#F5F5DC"
+        )
+        cls.vehicle = Vehicle.objects.create(
+            vin="WBA12345678901234",
+            year_built=2023,
+            model=cls.vehicle_model,
+            outer_color=cls.exterior_color,
+            interior_color=cls.interior_color
+        )
 
-#         # Create component type
-#         cls.component_type = ComponentType.objects.create(
-#             name="Engine"
-#         )
+        # Create component type
+        cls.component_type = ComponentType.objects.create(
+            name="Engine"
+        )
 
-#         # Create base component
-#         cls.base_component = VehicleComponent.objects.create(
-#             name="V8 Engine",
-#             component_type=cls.component_type,
-#             vehicle=cls.vehicle,
-#             status=0.8
-#         )
+        # Create base component
+        cls.base_component = VehicleComponent.objects.create(
+            name="V8 Engine",
+            component_type=cls.component_type,
+            vehicle=cls.vehicle,
+            status=0.8
+        )
 
-#         cls.valid_component_data = {
-#             'name': 'Turbocharger',
-#             'component_type': cls.component_type,
-#             'vehicle': cls.vehicle,
-#             'status': 0.9
-#         }
+        cls.valid_component_data = {
+            'name': 'Turbocharger',
+            'component_type': cls.component_type,
+            'vehicle': cls.vehicle,
+            'status': 0.9
+        }
 
 #     def test_name_validation_and_standardization(self):
 #         """
