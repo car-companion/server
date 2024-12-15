@@ -10,11 +10,15 @@ on:
   push:
     branches:
       - development
+    paths-ignore:
+      - coverage-badge.svg
   workflow_dispatch:
 
 jobs:
   test-build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v2
@@ -52,6 +56,21 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY_DEV }}
         run: |
           coverage run manage.py test --noinput
+          coverage report
+          coverage-badge -f -o coverage-badge.svg
+
+      - name: Save and commit coverage badge
+        if: github.event_name != 'pull_request'
+        run: |
+          if [[ $(git diff --exit-code coverage-badge.svg) ]]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "GitHub Actions"
+            git add coverage-badge.svg
+            git commit -m "Update coverage badge"
+            git push
+          else
+            echo "No changes in coverage-badge.svg, skipping commit."
+          fi
 
       - name: Deploy to Azure Web App (only on push, not PR)
         if: github.event_name != 'pull_request'
