@@ -1,59 +1,59 @@
-# from django.test import TestCase
-# from django.core.exceptions import ValidationError
-# from django.db import IntegrityError, transaction
-# from django.utils import timezone
-# from ...models import Vehicle, VehicleModel, Manufacturer, Color, ComponentType, VehicleComponent
-# from django.utils.translation import gettext_lazy as _
+from django.test import TestCase
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
+from django.utils import timezone
+from ...models import Vehicle, VehicleModel, Manufacturer, Color, ComponentType, VehicleComponent
+from django.utils.translation import gettext_lazy as _
 
 
-# class VehicleTests(TestCase):
-#     """
-#     Test suite for the Vehicle model.
-#     Covers VIN validation, year validation, relationships,
-#     nickname handling, and all model constraints.
-#     """
+class VehicleTests(TestCase):
+    """
+    Test suite for the Vehicle model.
+    Covers VIN validation, year validation, relationships,
+    nickname handling, and all model constraints.
+    """
 
-#     @classmethod
-#     def setUpTestData(cls):
-#         """Set up data for the entire test suite."""
-#         # Create manufacturer
-#         cls.manufacturer = Manufacturer.objects.create(
-#             name="BMW",
-#             country_code="DE"
-#         )
+    @classmethod
+    def setUpTestData(cls):
+        """Set up data for the entire test suite."""
+        # Create manufacturer
+        cls.manufacturer = Manufacturer.objects.create(
+            name="BMW",
+            country_code="DE"
+        )
 
-#         # Create vehicle model
-#         cls.vehicle_model = VehicleModel.objects.create(
-#             name="X5",
-#             manufacturer=cls.manufacturer
-#         )
+        # Create vehicle model
+        cls.vehicle_model = VehicleModel.objects.create(
+            name="X5",
+            manufacturer=cls.manufacturer
+        )
 
-#         # Create colors
-#         cls.exterior_color = Color.objects.create(
-#             name="Black",
-#             hex_code="#000000"
-#         )
-#         cls.interior_color = Color.objects.create(
-#             name="Beige",
-#             hex_code="#F5F5DC"
-#         )
+        # Create colors
+        cls.exterior_color = Color.objects.create(
+            name="Black",
+            hex_code="#000000"
+        )
+        cls.interior_color = Color.objects.create(
+            name="Beige",
+            hex_code="#F5F5DC"
+        )
 
-#         # Create base vehicle
-#         cls.base_vehicle = Vehicle.objects.create(
-#             vin="WBA12345678901234",
-#             year_built=2023,
-#             model=cls.vehicle_model,
-#             outer_color=cls.exterior_color,
-#             interior_color=cls.interior_color
-#         )
+        # Create base vehicle
+        cls.base_vehicle = Vehicle.objects.create(
+            vin="WBA12345678901234",
+            year_built=2023,
+            model=cls.vehicle_model,
+            outer_color=cls.exterior_color,
+            interior_color=cls.interior_color
+        )
 
-#         cls.valid_vehicle_data = {
-#             'vin': "WBA98765432109876",
-#             'year_built': 2023,
-#             'model': cls.vehicle_model,
-#             'outer_color': cls.exterior_color,
-#             'interior_color': cls.interior_color
-#         }
+        cls.valid_vehicle_data = {
+            'vin': "WBA98765432109876",
+            'year_built': 2023,
+            'model': cls.vehicle_model,
+            'outer_color': cls.exterior_color,
+            'interior_color': cls.interior_color
+        }
 
 #     def test_vin_validation_and_standardization(self):
 #         """
