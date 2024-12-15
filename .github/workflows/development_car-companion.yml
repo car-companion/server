@@ -10,6 +10,8 @@ on:
   push:
     branches:
       - development
+    paths-ignore:
+      - coverage-badge.svg
   workflow_dispatch:
 
 jobs:
@@ -58,6 +60,7 @@ jobs:
           coverage-badge -f -o coverage-badge.svg
 
       - name: Save and commit coverage badge
+        if: github.event_name != 'pull_request'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions"
