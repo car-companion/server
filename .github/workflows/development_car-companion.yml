@@ -55,11 +55,10 @@ jobs:
         run: |
           coverage run manage.py test --noinput
           coverage report
-          coverage-badge -o coverage.svg
+          coverage-badge -o coverage-badge.svg
 
       - name: Save and commit coverage badge
         run: |
-          mv coverage.svg ./coverage-badge.svg
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions"
           git add coverage-badge.svg
