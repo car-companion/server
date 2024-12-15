@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 
 from vehicle.models import Vehicle, VehicleModel, Manufacturer, Color
+from vehicle.views.vehicle import VehicleViewSet
 
 
 class VehicleViewSetTests(APITestCase):
@@ -281,3 +282,33 @@ class VehicleViewSetTests(APITestCase):
         url = reverse('vehicle:vehicle-nickname', kwargs={'vin': self.vehicle.vin})
         response = self.client.put(url, {'nickname': 'NewNick'})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_vin_is_valid_method(self):
+        """
+        Scenario: Testing VIN validation method directly
+        Given different VIN formats
+        When checking their validity using vin_is_valid method
+        Then appropriate boolean results should be returned
+        """
+        viewset = VehicleViewSet()
+
+        # Test valid VINs
+        valid_vins = [
+            'JH4KA3142KC889327',  # Your test vehicle VIN
+            'WBA12345678901234',  # Common format
+            'NPA12345678901234'  # Different valid format
+        ]
+        for vin in valid_vins:
+            with self.subTest(vin=vin):
+                self.assertTrue(viewset.vin_is_valid(vin))
+                self.assertTrue(viewset.vin_is_valid(vin.lower()))  # Test case insensitivity
+
+        # Test invalid VINs
+        invalid_vins = [
+            'INVALID123',  # Too short
+            'IO12345678901234Q',  # Contains invalid characters I, O, Q
+            'AB1234567890123##',  # Contains special characters
+        ]
+        for vin in invalid_vins:
+            with self.subTest(vin=vin):
+                self.assertFalse(viewset.vin_is_valid(vin))
