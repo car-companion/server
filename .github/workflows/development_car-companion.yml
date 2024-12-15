@@ -55,7 +55,7 @@ jobs:
         run: |
           coverage run manage.py test --noinput
           coverage report
-          coverage-badge -o coverage-badge.svg
+          coverage-badge -f -o coverage-badge.svg
 
       - name: Save and commit coverage badge
         run: |
