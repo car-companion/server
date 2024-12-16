@@ -2,43 +2,30 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-router = DefaultRouter()
-
-# Schema URLs
-schema_patterns = ([
-                       path('', SpectacularAPIView.as_view(), name='schema'),
-                       path('swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema:schema'), name='swagger-ui'),
-                       path('redoc/', SpectacularRedocView.as_view(url_name='schema:schema'), name='redoc'),
-                   ], 'schema')
-
-# Auth URLs
-auth_patterns = ([
-                     path('', include('djoser.urls')),
-                     path('', include('djoser.urls.jwt')),
-                 ], 'auth')
-
-# Vehicle ownership URLs
-vehicle_patterns = ([
-                        path('', include('vehicle.urls')),
-                    ], 'vehicle')
-
-# Core URL patterns
-urlpatterns = [
-    path('api/', include([
-        path('', include(router.urls)),
-        path('auth/', include(auth_patterns)),
-        path('schema/', include(schema_patterns)),
-        path('vehicle/', include(vehicle_patterns)),
-    ])),
-    path("admin/", admin.site.urls),
-    path("__debug__/", include("debug_toolbar.urls")),
-    path('health/', include('health_check.urls')),
+# Schema patterns
+schema_patterns = [
+    path('', SpectacularAPIView.as_view(), name='schema'),
+    path('swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema:schema'), name='swagger-ui'),
+    path('redoc/', SpectacularRedocView.as_view(url_name='schema:schema'), name='redoc'),
 ]
 
-# Static URL patterns for development
+# Auth patterns
+auth_patterns = [
+    path('', include('djoser.urls')),  # Includes user-related endpoints
+    path('', include('djoser.urls.jwt')),  # Includes JWT-related endpoints
+]
+
+# Main URL patterns
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('health/', include('health_check.urls')),
+    path('api/schema/', include((schema_patterns, 'schema'))),
+    path('api/auth/', include((auth_patterns, 'auth'), namespace='auth')),
+    path('api/car_companion/', include('car_companion.urls')),
+    path('__debug__/', include('debug_toolbar.urls')),
+]
+
 if settings.DEBUG:
-    static_patterns = static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns.extend(static_patterns)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

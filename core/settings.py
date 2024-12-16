@@ -63,7 +63,7 @@ INSTALLED_APPS = [
     'health_check.contrib.migrations',
     'colorfield',
     'guardian',
-    'vehicle'
+    'car_companion',
 ]
 
 MIDDLEWARE = [
