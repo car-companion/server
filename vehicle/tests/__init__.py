@@ -12,8 +12,14 @@ from .serializers.vehicle import ColorSerializerTests, VehicleModelSerializerTes
     NicknameSerializerTests
 from .serializers.vehicle_component import ComponentTypeSerializerTests, ComponentSerializerTests, \
     ComponentStatusUpdateSerializerTests
+from .serializers.permission import (GrantPermissionSerializerTests, PermissionResultSerializerTests,
+                                     RevokeRequestSerializerTests, RevokeResultSerializerTests,
+                                     AccessedVehicleSerializerTests)
 from .views.vehicle import VehicleViewSetTests
 from .views.vehicle_component import ComponentViewsTests
+from .views.permission import (VehiclePermissionReadOnlyTests, VehiclePermissionFilteringTests,
+                               VehiclePermissionManagementTests, AccessedVehiclesViewTests)
+from .views.permission import AccessedVehiclesViewTests
 
 __all__ = ['ColorAdminTests',
            'ColorModelTests',
@@ -35,5 +41,9 @@ __all__ = ['ColorAdminTests',
            'ComponentTypeSerializerTests',
            'ComponentSerializerTests',
            'ComponentStatusUpdateSerializerTests',
-           'ComponentViewsTests'
+           'ComponentViewsTests',
+           'VehiclePermissionReadOnlyTests',
+           'VehiclePermissionFilteringTests',
+           'VehiclePermissionManagementTests',
+           'AccessedVehiclesViewTests'
            ]
