@@ -83,7 +83,7 @@ class VehicleAdminTests(TestCase):
     @staticmethod
     def get_admin_url(action, *args):
         """Helper method to generate admin URLs"""
-        return reverse(f'admin:vehicle_vehicle_{action}', args=args)
+        return reverse(f'admin:car_companion_vehicle_{action}', args=args)
 
     def test_list_display_and_select_related(self):
         """

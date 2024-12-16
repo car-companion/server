@@ -51,17 +51,17 @@ class BaseVehiclePermissionTest(APITestCase):
 
     def get_list_url(self, vin):
         """Get URL for permission list endpoint."""
-        return reverse('vehicle:permissions:vehicle-permissions-overview',
+        return reverse('permissions:vehicle-permissions-overview',
                        kwargs={'vin': vin})
 
     def get_permission_url(self, vin, username=None, component_type=None, component_name=None):
         """Get URL for permission management endpoint."""
         if component_type and component_name:
-            url_name = 'vehicle:permissions:user-permissions-component-type-name'
+            url_name = 'permissions:user-permissions-component-type-name'
         elif component_type:
-            url_name = 'vehicle:permissions:user-permissions-component-type'
+            url_name = 'permissions:user-permissions-component-type'
         else:
-            url_name = 'vehicle:permissions:user-permissions'
+            url_name = 'permissions:user-permissions'
 
         kwargs = {'vin': vin}
         if username:
@@ -371,7 +371,7 @@ class AccessedVehiclesViewTests(BaseVehiclePermissionTest):
 
     def get_accessed_vehicles_url(self):
         """Get URL for accessed vehicles endpoint."""
-        return reverse('vehicle:accessed-vehicles')
+        return reverse('accessed-vehicles')
 
     def test_list_accessed_vehicles(self):
         """

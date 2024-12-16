@@ -4,6 +4,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
+from .. import admin
 from ...admin.color import ColorAdmin, UnfoldColorWidget
 from ...models import Color
 
@@ -42,7 +43,7 @@ class ColorAdminTests(TestCase):
         """
         Helper method to generate admin URLs
         """
-        return reverse(f'admin:vehicle_color_{action}', args=args)
+        return reverse(f'admin:car_companion_color_{action}', args=args)
 
     def test_admin_list_view_access(self):
         """

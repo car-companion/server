@@ -75,14 +75,14 @@ class ComponentViewsTests(APITestCase):
 
     # Base Helper Methods
     def _get_component_list_url(self, vin):
-        return reverse('vehicle:components:component-list', kwargs={'vin': vin})
+        return reverse('components:component-list', kwargs={'vin': vin})
 
     def _get_component_type_url(self, vin, type_name):
-        return reverse('vehicle:components:component-by-type',
+        return reverse('components:component-by-type',
                        kwargs={'vin': vin, 'type_name': type_name})
 
     def _get_component_detail_url(self, vin, type_name, name):
-        return reverse('vehicle:components:component-detail',
+        return reverse('components:component-detail',
                        kwargs={'vin': vin, 'type_name': type_name, 'name': name})
 
     # Component List Tests

@@ -42,7 +42,7 @@ class VehicleViewSetTests(APITestCase):
         self.client = APIClient()
 
     def get_url(self, route_name, **kwargs):
-        return reverse(f'vehicle:{route_name}', kwargs=kwargs)
+        return reverse(f'{route_name}', kwargs=kwargs)
 
     def test_take_ownership_success(self):
         """
@@ -279,7 +279,7 @@ class VehicleViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         # Test nickname update
-        url = reverse('vehicle:vehicle-nickname', kwargs={'vin': self.vehicle.vin})
+        url = reverse('vehicle-nickname', kwargs={'vin': self.vehicle.vin})
         response = self.client.put(url, {'nickname': 'NewNick'})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 

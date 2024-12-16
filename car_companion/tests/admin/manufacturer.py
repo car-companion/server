@@ -48,7 +48,7 @@ class ManufacturerAdminTests(TestCase):
     @staticmethod
     def get_admin_url(action, *args):
         """Helper method to generate admin URLs"""
-        return reverse(f'admin:vehicle_manufacturer_{action}', args=args)
+        return reverse(f'admin:car_companion_manufacturer_{action}', args=args)
 
     def test_admin_list_view_access(self):
         """
