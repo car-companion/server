@@ -115,6 +115,7 @@ class ComponentList(ComponentBaseView):
 
     @extend_schema(
         operation_id="list_vehicle_components",
+        summary="List Vehicle Components",
         parameters=[
             OpenApiParameter(
                 name="vin",
@@ -155,6 +156,7 @@ class ComponentByType(ComponentBaseView):
 
     @extend_schema(
         operation_id="list_components_by_type",
+        summary="List Components by Type",
         parameters=[
             OpenApiParameter(name="vin", description="Vehicle Identification Number", required=True, type=str,
                              location=OpenApiParameter.PATH),
@@ -194,6 +196,7 @@ class ComponentByType(ComponentBaseView):
 
     @extend_schema(
         operation_id="update_components_by_type",
+        summary="Update Components by Type",
         parameters=[
             OpenApiParameter(name="vin", description="Vehicle Identification Number", required=True, type=str,
                              location=OpenApiParameter.PATH),
@@ -243,6 +246,7 @@ class ComponentDetail(ComponentBaseView):
 
     @extend_schema(
         operation_id="get_component_detail",
+        summary="Get Component Details",
         parameters=[
             OpenApiParameter(name="vin", description="Vehicle Identification Number", required=True, type=str,
                              location=OpenApiParameter.PATH),
@@ -284,6 +288,7 @@ class ComponentDetail(ComponentBaseView):
 
     @extend_schema(
         operation_id="update_component_status",
+        summary="Update Component Status",
         parameters=[
             OpenApiParameter(name="vin", description="Vehicle Identification Number", required=True, type=str,
                              location=OpenApiParameter.PATH),
