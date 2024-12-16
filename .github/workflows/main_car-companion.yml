@@ -75,7 +75,7 @@ jobs:
       - name: Deploy to Azure Web App (only on push, not PR)
         if: github.event_name != 'pull_request'
         uses: azure/webapps-deploy@v2
-        with: 
+        with:
           app-name: 'car-companion'
           slot-name: 'production'
           publish-profile: ${{ secrets.AzureAppService_PublishProfile_Main }}
