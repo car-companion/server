@@ -25,16 +25,4 @@ class VehicleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vehicle
-        fields = ['vin', 'nickname', 'model', 'year_built', 'interior_color', 'outer_color']
-
-
-class NicknameSerializer(serializers.Serializer):
-    nickname = serializers.CharField(
-        min_length=2,
-        max_length=100,
-        required=True,
-        allow_blank=False,
-        validators=[
-            RegexValidator(regex=r'^[a-zA-Z0-9\s\-]*$')
-        ],
-    )
+        fields = ['vin',  'model', 'year_built', 'interior_color', 'outer_color']

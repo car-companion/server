@@ -63,7 +63,7 @@ class VehicleModel(models.Model):
         self.clean()
         super().save(*args, **kwargs)
 
-    def create_vehicle(self, vin, year_built, outer_color, interior_color, nickname=None):
+    def create_vehicle(self, vin, year_built, outer_color, interior_color):
         """
         Creates a new vehicle instance based on this model,
         including all default components.
@@ -77,7 +77,6 @@ class VehicleModel(models.Model):
             model=self,
             outer_color=outer_color,
             interior_color=interior_color,
-            nickname=nickname
         )
 
         # Clone all model default components for this vehicle

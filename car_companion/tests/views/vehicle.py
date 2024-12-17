@@ -191,47 +191,6 @@ class VehicleViewSetTests(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['vin'], vehicle2.vin)
 
-    def test_update_nickname_success(self):
-        """
-        Scenario: Owner updates their vehicle's nickname
-        Given an authenticated user
-        And a vehicle they own
-        When they update the nickname
-        Then the nickname is changed successfully
-        """
-        # Given
-        self.client.force_authenticate(user=self.user)
-        self.vehicle.owner = self.user
-        self.vehicle.save()
-
-        # When
-        url = self.get_url('vehicle-nickname', vin=self.vehicle.vin)
-        response = self.client.put(url, {'nickname': 'MyNewNickname'})
-
-        # Then
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.vehicle.refresh_from_db()
-        self.assertEqual(self.vehicle.nickname, 'MyNewNickname')
-
-    def test_update_nickname_invalid(self):
-        """
-        Scenario: Owner attempts to set an invalid nickname
-        Given an authenticated user
-        And a vehicle they own
-        When they attempt to set an invalid nickname
-        Then they receive a validation error
-        """
-        # Given
-        self.client.force_authenticate(user=self.user)
-        self.vehicle.owner = self.user
-        self.vehicle.save()
-
-        # When
-        url = self.get_url('vehicle-nickname', vin=self.vehicle.vin)
-        response = self.client.put(url, {'nickname': '@#Invalid'})
-
-        # Then
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_invalid_vin_length(self):
         """
@@ -276,11 +235,6 @@ class VehicleViewSetTests(APITestCase):
         # Test my_vehicles
         url = self.get_url('vehicle-my-vehicles')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-        # Test nickname update
-        url = reverse('vehicle-nickname', kwargs={'vin': self.vehicle.vin})
-        response = self.client.put(url, {'nickname': 'NewNick'})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_vin_is_valid_method(self):

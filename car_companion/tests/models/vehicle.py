@@ -10,7 +10,7 @@ class VehicleTests(TestCase):
     """
     Test suite for the Vehicle model.
     Covers VIN validation, year validation, relationships,
-    nickname handling, and all model constraints.
+    handling all model constraints.
     """
 
     @classmethod
@@ -139,46 +139,6 @@ class VehicleTests(TestCase):
                     with self.assertRaises(ValidationError):
                         vehicle.full_clean()
 
-    def test_nickname_validation(self):
-        """
-        Scenario: Testing nickname validation
-        Given various nickname formats
-        When saving vehicles
-        Then they should be properly validated and standardized
-        """
-        valid_cases = [
-            ('  My Car  ', 'My Car'),  # Whitespace stripping
-            ('Family-Car-2023', 'Family-Car-2023'),  # Valid with hyphen
-            ('My    Cool    Car', 'My Cool Car'),  # Multiple spaces
-            (None, None),  # No nickname
-        ]
-
-        invalid_cases = [
-            ('A', 'Nickname must be at least 2 characters long if provided.'),
-            ('Car@Home', 'Nickname can only contain letters, numbers, spaces, and hyphens.'),
-            ('My#Car', 'Nickname can only contain letters, numbers, spaces, and hyphens.'),
-        ]
-
-        # Test valid cases
-        for input_nickname, expected_nickname in valid_cases:
-            with self.subTest(input_nickname=input_nickname):
-                vehicle = Vehicle.objects.create(
-                    vin=f"NBA{self.valid_vehicle_data['year_built']}567890{len(input_nickname) if input_nickname else 0}",
-                    nickname=input_nickname,
-                    **{k: v for k, v in self.valid_vehicle_data.items() if k != 'vin'}
-                )
-                self.assertEqual(vehicle.nickname, expected_nickname)
-
-        # Test invalid cases
-        for invalid_nickname, expected_error in invalid_cases:
-            with self.subTest(invalid_nickname=invalid_nickname):
-                vehicle = Vehicle(
-                    nickname=invalid_nickname,
-                    **self.valid_vehicle_data
-                )
-                with self.assertRaises(ValidationError) as context:
-                    vehicle.full_clean()
-                self.assertIn(expected_error, str(context.exception))
 
     def test_required_relationships(self):
         """
@@ -204,32 +164,7 @@ class VehicleTests(TestCase):
                     vehicle.full_clean()
                 self.assertIn(expected_error, str(context.exception))
 
-    def test_string_representation(self):
-        """
-        Scenario: Testing string representation
-        Given vehicles with and without nicknames
-        When converting to string
-        Then it should show the correct format
-        """
-        # Test without nickname
-        self.assertEqual(
-            str(self.base_vehicle),
-            f"2023 Bmw (DE) X5 {self.base_vehicle.vin}"
-        )
 
-        # Test with nickname
-        vehicle_with_nickname = Vehicle.objects.create(
-            vin="NBA99999999999999",
-            year_built=2023,
-            model=self.vehicle_model,
-            outer_color=self.exterior_color,
-            interior_color=self.interior_color,
-            nickname="Family Car"
-        )
-        self.assertEqual(
-            str(vehicle_with_nickname),
-            f'2023 Bmw (DE) X5 "Family Car" NBA99999999999999'
-        )
 
     def test_manufacturer_property(self):
         """

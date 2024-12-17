@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from car_companion.models.vehicle import Vehicle
-from car_companion.serializers.vehicle import VehicleSerializer, NicknameSerializer
+from car_companion.serializers.vehicle import VehicleSerializer
 
 
 class VehicleViewSet(ViewSet):
@@ -22,7 +22,6 @@ class VehicleViewSet(ViewSet):
     - Taking ownership of vehicles
     - Disowning vehicles
     - Listing owned vehicles
-    - Managing vehicle nicknames
 
     All actions require authentication.
     """
@@ -63,7 +62,7 @@ class VehicleViewSet(ViewSet):
             Bool: Whether VIN is valid
         """
         return re.match(Vehicle.VIN_PATTERN, vin.upper()) is not None
-        
+
     @extend_schema(
         request=None,
         summary="Take ownership of a vehicle",
@@ -84,7 +83,7 @@ class VehicleViewSet(ViewSet):
 
         If successful, assigns ownership and 'is_owner' permission to the user.
         """
-        if not(re.match(r'^[A-HJ-NPR-Z0-9]{17}$', vin.upper())):
+        if not (re.match(r'^[A-HJ-NPR-Z0-9]{17}$', vin.upper())):
             return Response(
                 {"detail": "VIN is invalid"},
                 status=status.HTTP_400_BAD_REQUEST
@@ -131,7 +130,7 @@ class VehicleViewSet(ViewSet):
 
         Removes both ownership and 'is_owner' permission from the user.
         """
-        if not(re.match(r'^[A-HJ-NPR-Z0-9]{17}$', vin.upper())):
+        if not (re.match(r'^[A-HJ-NPR-Z0-9]{17}$', vin.upper())):
             return Response(
                 {"detail": "VIN is invalid"},
                 status=status.HTTP_400_BAD_REQUEST
@@ -158,41 +157,4 @@ class VehicleViewSet(ViewSet):
         vehicles = self.queryset.filter(owner=request.user)
         return Response(
             self.serializer_class(vehicles, many=True).data
-        )
-
-    @extend_schema(
-        summary="Update vehicle nickname",
-        description="Set a new nickname for a vehicle you own",
-        request=NicknameSerializer,
-        responses={
-            200: VehicleSerializer,
-            400: OpenApiResponse(description="Invalid nickname"),
-            403: OpenApiResponse(description="Not the owner"),
-            404: OpenApiResponse(description="Vehicle not found"),
-        },
-        tags=['Vehicle']
-    )
-    @action(detail=True, methods=["put"])
-    def nickname(self, request: Request, vin: str) -> Response:
-        """
-        Update the nickname of a vehicle.
-
-        Requires vehicle ownership. Nickname must pass model validation.
-        """
-        vehicle = self.get_vehicle(vin, request.user)
-
-        serializer = NicknameSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Update and save nickname
-        vehicle.nickname = serializer.validated_data['nickname']
-        vehicle.save()
-
-        return Response(
-            self.serializer_class(vehicle).data,
-            status=status.HTTP_200_OK
         )

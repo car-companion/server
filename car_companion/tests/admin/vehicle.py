@@ -71,7 +71,6 @@ class VehicleAdminTests(TestCase):
             model=self.vehicle_model,
             outer_color=self.exterior_color,
             interior_color=self.interior_color,
-            nickname='Test Vehicle'
         )
 
         # Set up admin
@@ -165,7 +164,6 @@ class VehicleAdminTests(TestCase):
             model=self.vehicle_model,
             outer_color=self.exterior_color,
             interior_color=self.interior_color,
-            nickname='Family Car'
         )
 
         test_cases = [
@@ -200,7 +198,7 @@ class VehicleAdminTests(TestCase):
 
         # Test fields presence
         form_fields = [
-            'vin', 'year_built', 'model', 'nickname',
+            'vin', 'year_built', 'model',
             'outer_color', 'interior_color'
         ]
         for field in form_fields:

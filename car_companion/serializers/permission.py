@@ -73,7 +73,7 @@ class AccessedVehicleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vehicle
-        fields = ['vin', 'nickname', 'permissions']
+        fields = ['vin', 'permissions']
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_permissions(self, obj: Vehicle) -> list:

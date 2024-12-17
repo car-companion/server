@@ -116,23 +116,6 @@ class Vehicle(models.Model):
         }
     )
 
-    nickname = models.CharField(
-        _("Nickname"),
-        max_length=100,
-        blank=True,
-        null=True,
-        help_text=_("Optional nickname for the vehicle"),
-        validators=[
-            RegexValidator(
-                regex=r'^[a-zA-Z0-9\s\-]*$',
-                message=_("Nickname can only contain letters, numbers, spaces, and hyphens.")
-            )
-        ],
-        error_messages={
-            'max_length': _("Nickname cannot be longer than 100 characters.")
-        }
-    )
-
     owner = models.ForeignKey(
         User,
         verbose_name=_("Owner"),
@@ -183,7 +166,7 @@ class Vehicle(models.Model):
                 errors['year_built'] = _(f"Year must be {self.FIRST_MODEL_YEAR} or later.")
 
         # Validate VIN format and standardization
-        if self.vin :
+        if self.vin:
             # Convert to uppercase for validation
             self.vin = self.vin.upper()
             # Check for invalid characters (I, O, Q)
@@ -191,16 +174,6 @@ class Vehicle(models.Model):
                 errors['vin'] = _("VIN cannot contain letters I, O, or Q.")
         else:
             errors['vin'] = _("VIN is required.")
-
-        # Validate nickname format if provided
-        if self.nickname:
-            self.nickname = self.nickname.strip()
-            if 2 > len(self.nickname) > 0:
-                errors['nickname'] = _("Nickname must be at least 2 characters long if provided.")
-
-            # Check for special characters not caught by the validator
-            if not self.nickname.replace(' ', '').replace('-', '').isalnum():
-                errors['nickname'] = _("Nickname can only contain letters, numbers, spaces, and hyphens.")
 
         # Validate required relationships
         if not self.model_id:
@@ -218,16 +191,9 @@ class Vehicle(models.Model):
         Custom save method with additional validation.
         - Performs full model validation
         - Standardizes VIN format
-        - Standardizes nickname format
         """
         # Standardize VIN
         self.vin = self.vin.upper()
-
-        # Standardize nickname
-        if self.nickname:
-            self.nickname = self.nickname.strip()
-            # Convert multiple spaces to single space
-            self.nickname = ' '.join(self.nickname.split())
 
         # Perform full validation
         self.clean()
@@ -238,12 +204,9 @@ class Vehicle(models.Model):
         """
         Returns a string representation of the vehicle.
         Format: YYYY Manufacturer Model (VIN)
-        If nickname is set, append it: YYYY Manufacturer Model "Nickname" (VIN)
-        If owner is set, append it: YYYY Manufacturer Model "Nickname" (VIN) [Owned by: "Username"]
+        If owner is set, append it: YYYY Manufacturer Model (VIN) [Owned by: "Username"]
         """
         base = f"{self.year_built} {self.model.manufacturer} {self.model}"
-        if self.nickname:
-            base += f' "{self.nickname}"'
         base += f' {self.vin}'
         if self.owner:
             base += f' [Owned by: {self.owner.username}]'

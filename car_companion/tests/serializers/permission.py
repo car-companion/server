@@ -193,7 +193,6 @@ class AccessedVehicleSerializerTests(TestCase):
             model=self.model,
             outer_color=self.color,
             interior_color=self.color,
-            nickname="Test Vehicle"
         )
 
         # Create component and permission
@@ -221,7 +220,6 @@ class AccessedVehicleSerializerTests(TestCase):
 
         expected_data = {
             'vin': 'WBA12345678901234',
-            'nickname': 'Test Vehicle',
             'permissions': [{
                 'component_type': 'Engine',
                 'component_name': 'Main engine',

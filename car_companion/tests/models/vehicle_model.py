@@ -140,12 +140,10 @@ class VehicleModelTests(TestCase):
             year_built=2024,
             outer_color=outer_color,
             interior_color=interior_color,
-            nickname="My BMW"
         )
 
         # Verify the vehicle was created correctly
         self.assertEqual(vehicle.model, self.base_model)
-        self.assertEqual(vehicle.nickname, "My BMW")
 
         # Verify components were created
         self.assertEqual(vehicle.components.count(), 1)
