@@ -14,7 +14,6 @@ class ColorSerializerTests(TestCase):
             'name': 'Metallic blue',
             'hex_code': '#0000FF',
             'is_metallic': True,
-            'description': 'Deep metallic blue color'
         }
         self.color = Color.objects.create(**self.color_data)
         self.serializer = ColorSerializer(self.color)
@@ -28,13 +27,12 @@ class ColorSerializerTests(TestCase):
         And no unexpected fields should be included
         """
         data = self.serializer.data
-        expected_fields = {'name', 'hex_code', 'is_metallic', 'description'}
+        expected_fields = {'name', 'hex_code', 'is_metallic'}
 
         self.assertEqual(set(data.keys()), expected_fields)
         self.assertEqual(data['name'], 'Metallic blue')  # Verify capitalization
         self.assertEqual(data['hex_code'], '#0000FF')
         self.assertTrue(data['is_metallic'])
-        self.assertEqual(data['description'], 'Deep metallic blue color')
 
     def test_color_list_serialization(self):
         """
@@ -58,7 +56,7 @@ class ColorSerializerTests(TestCase):
         serializer = ColorSerializer(colors, many=True)
 
         self.assertEqual(len(serializer.data), 3)  # Including the one from setUp
-        self.assertTrue(all(set(color.keys()) == {'name', 'hex_code', 'is_metallic', 'description'}
+        self.assertTrue(all(set(color.keys()) == {'name', 'hex_code', 'is_metallic'}
                             for color in serializer.data))
 
     def test_color_relationships(self):
@@ -98,7 +96,7 @@ class ColorSerializerTests(TestCase):
         serializer = ColorSerializer(self.color)
         self.assertEqual(
             set(serializer.data.keys()),
-            {'name', 'hex_code', 'is_metallic', 'description'}
+            {'name', 'hex_code', 'is_metallic'}
         )
 
 
@@ -111,7 +109,6 @@ class ColorCreateSerializerTests(TestCase):
             'name': 'Metallic Blue',
             'hex_code': '#0000FF',
             'is_metallic': True,
-            'description': 'Deep metallic blue color'
         }
 
     def test_hex_code_validation(self):
@@ -214,7 +211,6 @@ class ColorCreateSerializerTests(TestCase):
         self.assertEqual(color.name, 'Metallic blue')
         self.assertEqual(color.hex_code, '#0000FF')
         self.assertTrue(color.is_metallic)
-        self.assertEqual(color.description, 'Deep metallic blue color')
 
     def test_create_color_with_minimum_data(self):
         """
@@ -236,7 +232,6 @@ class ColorCreateSerializerTests(TestCase):
         self.assertEqual(color.name, 'Blue')
         self.assertEqual(color.hex_code, '#0000FF')
         self.assertFalse(color.is_metallic)
-        self.assertIsNone(color.description)
 
     def test_color_validation_scenarios(self):
         """

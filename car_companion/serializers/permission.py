@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from car_companion.models import ComponentPermission, Vehicle
+from car_companion.models import ComponentPermission, Vehicle, VehicleUserPreferences
+from car_companion.serializers.color import ColorSerializer
 
 User = get_user_model()
 
@@ -67,13 +68,24 @@ class RevokeResultSerializer(BasePermissionSerializer):
 class AccessedVehicleSerializer(serializers.ModelSerializer):
     """Serializer for vehicles a user has access to."""
 
-    permissions = serializers.SerializerMethodField(
-        help_text="Component permissions for this vehicle"
-    )
+    model = serializers.CharField(source='model.name', help_text="Vehicle model name")
+    year_built = serializers.IntegerField(help_text="Year the vehicle was built")
+    default_interior_color = ColorSerializer(source='interior_color', help_text="Default interior color")
+    default_exterior_color = ColorSerializer(source='outer_color', help_text="Default exterior color")
+    user_preferences = serializers.SerializerMethodField(help_text="User-specific preferences for the vehicle")
+    permissions = serializers.SerializerMethodField(help_text="Component permissions for this vehicle")
 
     class Meta:
         model = Vehicle
-        fields = ['vin', 'permissions']
+        fields = [
+            'vin',
+            'model',
+            'year_built',
+            'default_interior_color',
+            'default_exterior_color',
+            'user_preferences',
+            'permissions'
+        ]
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_permissions(self, obj: Vehicle) -> list:
@@ -83,8 +95,7 @@ class AccessedVehicleSerializer(serializers.ModelSerializer):
             component__vehicle=obj,
             user=self.context['request'].user
         )
-                       .select_related('component', 'component__component_type')
-                       )
+                       .select_related('component', 'component__component_type'))
 
         return [
             {
@@ -94,3 +105,19 @@ class AccessedVehicleSerializer(serializers.ModelSerializer):
             }
             for perm in permissions
         ]
+
+    @extend_schema_field(serializers.DictField())
+    def get_user_preferences(self, obj: Vehicle) -> dict:
+        """Fetch user-specific preferences for the current user."""
+        request_user = self.context['request'].user
+        try:
+            preferences = obj.user_preferences.get(user=request_user)
+            return {
+                'nickname': preferences.nickname,
+                'interior_color': ColorSerializer(
+                    preferences.interior_color).data if preferences.interior_color else None,
+                'exterior_color': ColorSerializer(
+                    preferences.exterior_color).data if preferences.exterior_color else None,
+            }
+        except VehicleUserPreferences.DoesNotExist:
+            return None

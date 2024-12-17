@@ -4,7 +4,7 @@ from guardian.shortcuts import assign_perm
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 
-from car_companion.models import Vehicle, VehicleModel, Manufacturer, Color
+from car_companion.models import Vehicle, VehicleModel, Manufacturer, Color, VehicleUserPreferences
 from car_companion.views.vehicle import VehicleViewSet
 
 
@@ -158,7 +158,7 @@ class VehicleViewSetTests(APITestCase):
         Given an authenticated user
         And multiple vehicles with different owners
         When they request their vehicle list
-        Then they receive only their owned vehicles
+        Then they receive only their owned vehicles with color and preference details
         """
         # Given
         self.client.force_authenticate(user=self.user)
@@ -173,7 +173,17 @@ class VehicleViewSetTests(APITestCase):
             owner=self.user
         )
 
-        vehicle3 = Vehicle.objects.create(
+        # Create preferences for the user for one vehicle
+        VehicleUserPreferences.objects.create(
+            vehicle=vehicle2,
+            user=self.user,
+            nickname='My Vehicle',
+            interior_color=self.color,
+            exterior_color=self.color
+        )
+
+        # Vehicle owned by another user
+        Vehicle.objects.create(
             vin='32345678901234567',
             year_built=2022,
             model=self.model,
@@ -188,9 +198,19 @@ class VehicleViewSetTests(APITestCase):
 
         # Then
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 1)  # User should see only their vehicle
         self.assertEqual(response.data[0]['vin'], vehicle2.vin)
 
+        # Check for additional preference details in the response
+        self.assertIn('default_interior_color', response.data[0])
+        self.assertIn('default_exterior_color', response.data[0])
+        self.assertIn('user_preferences', response.data[0])
+
+        # Validate user preferences
+        user_prefs = response.data[0]['user_preferences']
+        self.assertEqual(user_prefs['nickname'], 'My Vehicle')
+        self.assertEqual(user_prefs['interior_color']['name'], self.color.name)
+        self.assertEqual(user_prefs['exterior_color']['name'], self.color.name)
 
     def test_invalid_vin_length(self):
         """

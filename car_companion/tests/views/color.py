@@ -32,19 +32,16 @@ class ColorListCreateViewTests(TestCase):
                 name='Metallic Blue',
                 hex_code='#0000FF',
                 is_metallic=True,
-                description='Deep metallic blue color'
             ),
             Color.objects.create(
                 name='Pearl White',
                 hex_code='#FFFFFF',
                 is_metallic=True,
-                description='Pearly white finish'
             ),
             Color.objects.create(
                 name='Matte Black',
                 hex_code='#000000',
                 is_metallic=False,
-                description='Classic matte black'
             )
         ]
 
@@ -85,7 +82,7 @@ class ColorListCreateViewTests(TestCase):
         self.assertEqual(len(response.data), 3)  # Three test colors
 
         # Verify serialization format
-        expected_fields = {'name', 'hex_code', 'is_metallic', 'description'}
+        expected_fields = {'name', 'hex_code', 'is_metallic' }
         self.assertEqual(set(response.data[0].keys()), expected_fields)
 
         # Verify some content
@@ -108,7 +105,6 @@ class ColorListCreateViewTests(TestCase):
             'name': 'Forest Green',
             'hex_code': '#228B22',
             'is_metallic': False,
-            'description': 'Deep forest green color'
         }
 
         response = self.client.post(self.url, color_data)
@@ -227,10 +223,6 @@ class ColorListCreateViewTests(TestCase):
         # Test GET request - should use ColorSerializer
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(isinstance(
-            response.data[0].get('description', None),
-            str
-        ))
 
         # Test POST request - should use ColorCreateSerializer
         color_data = {

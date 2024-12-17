@@ -12,6 +12,7 @@ from rest_framework.viewsets import ViewSet
 
 from car_companion.models.vehicle import Vehicle
 from car_companion.serializers.vehicle import VehicleSerializer
+from car_companion.serializers.vehicle_preferences import VehiclePreferencesSerializer
 
 
 class VehicleViewSet(ViewSet):
@@ -148,13 +149,16 @@ class VehicleViewSet(ViewSet):
     @extend_schema(
         summary="List owned vehicles",
         description="Get a list of all vehicles owned by the current user",
-        responses={200: VehicleSerializer(many=True)},
+        responses={200: VehiclePreferencesSerializer(many=True)},
         tags=['Vehicle']
     )
     @action(detail=False, methods=["get"])
     def my_vehicles(self, request: Request) -> Response:
-        """List all vehicles owned by the current user."""
+        """
+        List all vehicles owned by the current user with preferences and colors.
+        """
         vehicles = self.queryset.filter(owner=request.user)
-        return Response(
-            self.serializer_class(vehicles, many=True).data
+        serializer = VehiclePreferencesSerializer(
+            vehicles, many=True, context={'request': request}  # Pass context for user-specific preferences
         )
+        return Response(serializer.data)

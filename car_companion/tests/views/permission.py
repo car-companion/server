@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from car_companion.models import (
     Vehicle, VehicleModel, Manufacturer, Color,
-    ComponentType, VehicleComponent, ComponentPermission
+    ComponentType, VehicleComponent, ComponentPermission, VehicleUserPreferences
 )
 
 
@@ -373,33 +373,131 @@ class AccessedVehiclesViewTests(BaseVehiclePermissionTest):
         """Get URL for accessed vehicles endpoint."""
         return reverse('accessed-vehicles')
 
-    def test_list_accessed_vehicles(self):
+    def test_list_accessed_vehicles_with_preferences(self):
         """
-        Scenario: User lists vehicles they have access to
-        Given a user with permissions on some vehicles
+        Scenario: User lists vehicles they have access to with user preferences
+        Given a user with permissions on some vehicles and user preferences
         When requesting their accessed vehicles
-        Then they receive a list of vehicles they can access
+        Then they receive a list of vehicles with full details and preferences
         """
         self.client.force_authenticate(user=self.user)
+
+        # Grant permission to the user
         ComponentPermission.objects.create(
             component=self.main_engine,
             user=self.user,
             permission_type='read'
         )
 
-        response = self.client.get(self.get_accessed_vehicles_url())
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['vin'], self.vehicle.vin)
+        # Add user preferences for the vehicle
+        VehicleUserPreferences.objects.create(
+            vehicle=self.vehicle,
+            user=self.user,
+            nickname="My Test Vehicle",
+            interior_color=self.color,
+            exterior_color=self.color
+        )
 
-    def test_no_accessed_vehicles(self):
+        # Make the request
+        response = self.client.get(self.get_accessed_vehicles_url())
+
+        # Expected response data
+        expected_data = [{
+            'vin': self.vehicle.vin,
+            'model': self.vehicle.model.name,
+            'year_built': self.vehicle.year_built,
+            'default_interior_color': {
+                'name': self.color.name,
+                'hex_code': self.color.hex_code,
+                'is_metallic': self.color.is_metallic
+            },
+            'default_exterior_color': {
+                'name': self.color.name,
+                'hex_code': self.color.hex_code,
+                'is_metallic': self.color.is_metallic
+            },
+            'user_preferences': {
+                'nickname': "My Test Vehicle",
+                'interior_color': {
+                    'name': self.color.name,
+                    'hex_code': self.color.hex_code,
+                    'is_metallic': self.color.is_metallic
+                },
+                'exterior_color': {
+                    'name': self.color.name,
+                    'hex_code': self.color.hex_code,
+                    'is_metallic': self.color.is_metallic
+                }
+            },
+            'permissions': [{
+                'component_type': self.main_engine.component_type.name,
+                'component_name': self.main_engine.name,
+                'permission_type': 'read'
+            }]
+        }]
+
+        # Assertions
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected_data)
+
+    def test_list_accessed_vehicles_without_preferences(self):
+        """
+        Scenario: User lists vehicles they have access to without user preferences
+        Given a user with permissions on vehicles but no preferences
+        When requesting their accessed vehicles
+        Then they receive vehicle details with user_preferences as null
+        """
+        self.client.force_authenticate(user=self.user)
+
+        # Grant permission to the user
+        ComponentPermission.objects.create(
+            component=self.main_engine,
+            user=self.user,
+            permission_type='read'
+        )
+
+        # Make the request
+        response = self.client.get(self.get_accessed_vehicles_url())
+
+        # Expected response data
+        expected_data = [{
+            'vin': self.vehicle.vin,
+            'model': self.vehicle.model.name,
+            'year_built': self.vehicle.year_built,
+            'default_interior_color': {
+                'name': self.color.name,
+                'hex_code': self.color.hex_code,
+                'is_metallic': self.color.is_metallic
+            },
+            'default_exterior_color': {
+                'name': self.color.name,
+                'hex_code': self.color.hex_code,
+                'is_metallic': self.color.is_metallic
+            },
+            'user_preferences': None,
+            'permissions': [{
+                'component_type': self.main_engine.component_type.name,
+                'component_name': self.main_engine.name,
+                'permission_type': 'read'
+            }]
+        }]
+
+        # Assertions
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected_data)
+
+    def test_list_accessed_vehicles_no_permissions(self):
         """
         Scenario: User with no permissions lists accessed vehicles
-        Given a user with no vehicle permissions
+        Given a user with no component permissions
         When requesting their accessed vehicles
         Then they receive an empty list
         """
         self.client.force_authenticate(user=self.user)
+
+        # Make the request
         response = self.client.get(self.get_accessed_vehicles_url())
+
+        # Assertions
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(response.data, [])

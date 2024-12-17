@@ -3,15 +3,18 @@ from django.utils.translation import gettext_lazy as _
 
 from car_companion.models import Color
 
+
 class ColorSerializer(serializers.ModelSerializer):
     """Serializer for reading color information."""
+
     class Meta:
         model = Color
-        fields = ['name', 'hex_code', 'is_metallic', 'description']
+        fields = ['name', 'hex_code', 'is_metallic']
 
 
 class ColorCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating new colors."""
+
     class Meta:
         model = Color
         fields = ['name', 'hex_code', 'is_metallic', 'description']

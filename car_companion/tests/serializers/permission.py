@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from car_companion.models import (
     Vehicle, VehicleModel, Manufacturer, Color, ComponentType,
-    VehicleComponent, ComponentPermission
+    VehicleComponent, ComponentPermission, VehicleUserPreferences
 )
 from car_companion.serializers.permission import (
     GrantPermissionSerializer,
@@ -176,23 +176,38 @@ class AccessedVehicleSerializerTests(TestCase):
 
         # Create vehicle hierarchy
         self.manufacturer = Manufacturer.objects.create(
-            name="Bmw",
+            name="BMW",
             country_code="DE"
         )
         self.model = VehicleModel.objects.create(
             name="X5",
             manufacturer=self.manufacturer
         )
-        self.color = Color.objects.create(
-            name="Black",
-            hex_code="#000000"
+        self.color_interior = Color.objects.create(
+            name="Beige",
+            hex_code="#F5F5DC",
+            is_metallic=False
+        )
+        self.color_exterior = Color.objects.create(
+            name="Metallic blue",
+            hex_code="#0000FF",
+            is_metallic=True
         )
         self.vehicle = Vehicle.objects.create(
             vin="WBA12345678901234",
             year_built=2023,
             model=self.model,
-            outer_color=self.color,
-            interior_color=self.color,
+            outer_color=self.color_exterior,
+            interior_color=self.color_interior,
+        )
+
+        # Create user preferences
+        self.preferences = VehicleUserPreferences.objects.create(
+            vehicle=self.vehicle,
+            user=self.user,
+            nickname="My Favorite BMW",
+            interior_color=self.color_interior,
+            exterior_color=self.color_exterior
         )
 
         # Create component and permission
@@ -208,18 +223,43 @@ class AccessedVehicleSerializerTests(TestCase):
             permission_type=ComponentPermission.PermissionType.READ
         )
 
-    def test_accessed_vehicle_serialization(self):
+    def test_accessed_vehicle_serialization_with_preferences(self):
         """
-        Scenario: Serializing vehicle with user permissions
-        Given a vehicle with component permissions
+        Scenario: Serializing vehicle with user preferences and permissions
+        Given a vehicle with component permissions and user preferences
         When serializing the vehicle
-        Then all fields and permissions should be properly represented
+        Then all fields, preferences, and permissions should be properly represented
         """
         context = {'request': type('Request', (), {'user': self.user})}
         serializer = AccessedVehicleSerializer(self.vehicle, context=context)
 
         expected_data = {
             'vin': 'WBA12345678901234',
+            'model': 'X5',
+            'year_built': 2023,
+            'default_interior_color': {
+                'name': 'Beige',
+                'hex_code': '#F5F5DC',
+                'is_metallic': False
+            },
+            'default_exterior_color': {
+                'name': 'Metallic blue',
+                'hex_code': '#0000FF',
+                'is_metallic': True
+            },
+            'user_preferences': {
+                'nickname': 'My Favorite BMW',
+                'interior_color': {
+                    'name': 'Beige',
+                    'hex_code': '#F5F5DC',
+                    'is_metallic': False
+                },
+                'exterior_color': {
+                    'name': 'Metallic blue',
+                    'hex_code': '#0000FF',
+                    'is_metallic': True
+                }
+            },
             'permissions': [{
                 'component_type': 'Engine',
                 'component_name': 'Main engine',
@@ -229,17 +269,84 @@ class AccessedVehicleSerializerTests(TestCase):
 
         self.assertEqual(serializer.data, expected_data)
 
-    def test_accessed_vehicle_without_permissions(self):
+    def test_accessed_vehicle_serialization_without_preferences(self):
         """
-        Scenario: Serializing vehicle without permissions
-        Given a vehicle with no component permissions
+        Scenario: Serializing vehicle without user preferences
+        Given a vehicle with no user-specific preferences
+        When serializing the vehicle
+        Then user_preferences should be null
+        """
+        # Delete user preferences
+        self.preferences.delete()
+
+        context = {'request': type('Request', (), {'user': self.user})}
+        serializer = AccessedVehicleSerializer(self.vehicle, context=context)
+
+        expected_data = {
+            'vin': 'WBA12345678901234',
+            'model': 'X5',
+            'year_built': 2023,
+            'default_interior_color': {
+                'name': 'Beige',
+                'hex_code': '#F5F5DC',
+                'is_metallic': False
+            },
+            'default_exterior_color': {
+                'name': 'Metallic blue',
+                'hex_code': '#0000FF',
+                'is_metallic': True
+            },
+            'user_preferences': None,
+            'permissions': [{
+                'component_type': 'Engine',
+                'component_name': 'Main engine',
+                'permission_type': 'read'
+            }]
+        }
+
+        self.assertEqual(serializer.data, expected_data)
+
+    def test_accessed_vehicle_serialization_without_permissions(self):
+        """
+        Scenario: Serializing vehicle without component permissions
+        Given a vehicle with no component permissions for the user
         When serializing the vehicle
         Then permissions list should be empty
         """
-        # Delete existing permission
+        # Delete the user's permission
         self.permission.delete()
 
         context = {'request': type('Request', (), {'user': self.user})}
         serializer = AccessedVehicleSerializer(self.vehicle, context=context)
 
-        self.assertEqual(serializer.data['permissions'], [])
+        expected_data = {
+            'vin': 'WBA12345678901234',
+            'model': 'X5',
+            'year_built': 2023,
+            'default_interior_color': {
+                'name': 'Beige',
+                'hex_code': '#F5F5DC',
+                'is_metallic': False
+            },
+            'default_exterior_color': {
+                'name': 'Metallic blue',
+                'hex_code': '#0000FF',
+                'is_metallic': True
+            },
+            'user_preferences': {
+                'nickname': 'My Favorite BMW',
+                'interior_color': {
+                    'name': 'Beige',
+                    'hex_code': '#F5F5DC',
+                    'is_metallic': False
+                },
+                'exterior_color': {
+                    'name': 'Metallic blue',
+                    'hex_code': '#0000FF',
+                    'is_metallic': True
+                }
+            },
+            'permissions': []
+        }
+
+        self.assertEqual(serializer.data, expected_data)
