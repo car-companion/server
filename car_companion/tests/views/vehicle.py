@@ -4,7 +4,7 @@ from guardian.shortcuts import assign_perm
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 
-from car_companion.models import Vehicle, VehicleModel, Manufacturer, Color
+from car_companion.models import Vehicle, VehicleModel, Manufacturer, Color, VehicleUserPreferences
 from car_companion.views.vehicle import VehicleViewSet
 
 
@@ -158,7 +158,7 @@ class VehicleViewSetTests(APITestCase):
         Given an authenticated user
         And multiple vehicles with different owners
         When they request their vehicle list
-        Then they receive only their owned vehicles
+        Then they receive only their owned vehicles with color and preference details
         """
         # Given
         self.client.force_authenticate(user=self.user)
@@ -173,7 +173,17 @@ class VehicleViewSetTests(APITestCase):
             owner=self.user
         )
 
-        vehicle3 = Vehicle.objects.create(
+        # Create preferences for the user for one vehicle
+        VehicleUserPreferences.objects.create(
+            vehicle=vehicle2,
+            user=self.user,
+            nickname='My Vehicle',
+            interior_color=self.color,
+            exterior_color=self.color
+        )
+
+        # Vehicle owned by another user
+        Vehicle.objects.create(
             vin='32345678901234567',
             year_built=2022,
             model=self.model,
@@ -188,50 +198,19 @@ class VehicleViewSetTests(APITestCase):
 
         # Then
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 1)  # User should see only their vehicle
         self.assertEqual(response.data[0]['vin'], vehicle2.vin)
 
-    def test_update_nickname_success(self):
-        """
-        Scenario: Owner updates their vehicle's nickname
-        Given an authenticated user
-        And a vehicle they own
-        When they update the nickname
-        Then the nickname is changed successfully
-        """
-        # Given
-        self.client.force_authenticate(user=self.user)
-        self.vehicle.owner = self.user
-        self.vehicle.save()
+        # Check for additional preference details in the response
+        self.assertIn('default_interior_color', response.data[0])
+        self.assertIn('default_exterior_color', response.data[0])
+        self.assertIn('user_preferences', response.data[0])
 
-        # When
-        url = self.get_url('vehicle-nickname', vin=self.vehicle.vin)
-        response = self.client.put(url, {'nickname': 'MyNewNickname'})
-
-        # Then
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.vehicle.refresh_from_db()
-        self.assertEqual(self.vehicle.nickname, 'MyNewNickname')
-
-    def test_update_nickname_invalid(self):
-        """
-        Scenario: Owner attempts to set an invalid nickname
-        Given an authenticated user
-        And a vehicle they own
-        When they attempt to set an invalid nickname
-        Then they receive a validation error
-        """
-        # Given
-        self.client.force_authenticate(user=self.user)
-        self.vehicle.owner = self.user
-        self.vehicle.save()
-
-        # When
-        url = self.get_url('vehicle-nickname', vin=self.vehicle.vin)
-        response = self.client.put(url, {'nickname': '@#Invalid'})
-
-        # Then
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Validate user preferences
+        user_prefs = response.data[0]['user_preferences']
+        self.assertEqual(user_prefs['nickname'], 'My Vehicle')
+        self.assertEqual(user_prefs['interior_color']['name'], self.color.name)
+        self.assertEqual(user_prefs['exterior_color']['name'], self.color.name)
 
     def test_invalid_vin_length(self):
         """
@@ -276,11 +255,6 @@ class VehicleViewSetTests(APITestCase):
         # Test my_vehicles
         url = self.get_url('vehicle-my-vehicles')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-        # Test nickname update
-        url = reverse('vehicle-nickname', kwargs={'vin': self.vehicle.vin})
-        response = self.client.put(url, {'nickname': 'NewNick'})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_vin_is_valid_method(self):

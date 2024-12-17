@@ -51,7 +51,6 @@ class VehicleAdmin(ModelAdmin, GuardedModelAdmin):
 
     search_fields = [
         'vin',
-        'nickname',
         'model__name',
         'model__manufacturer__name'
     ]
@@ -68,7 +67,6 @@ class VehicleAdmin(ModelAdmin, GuardedModelAdmin):
                 'vin',
                 'year_built',
                 'model',
-                'nickname',
                 'owner'
             )
         }),

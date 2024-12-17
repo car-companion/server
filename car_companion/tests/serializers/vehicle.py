@@ -2,7 +2,6 @@ from django.test import TestCase
 from car_companion.models import Vehicle, VehicleModel, Manufacturer, Color
 from car_companion.serializers.vehicle import (
     VehicleSerializer,
-    NicknameSerializer,
     ColorSerializer,
     VehicleModelSerializer
 )
@@ -89,7 +88,6 @@ class VehicleSerializerTests(TestCase):
             model=self.vehicle_model,
             outer_color=self.outer_color,
             interior_color=self.interior_color,
-            nickname="My Beamer"
         )
 
     def test_vehicle_serialization_should_include_nested_relationships(self):
@@ -103,7 +101,6 @@ class VehicleSerializerTests(TestCase):
         serializer = VehicleSerializer(self.vehicle)
         expected_data = {
             'vin': 'WBA12345678901234',
-            'nickname': 'My Beamer',
             'year_built': 2023,
             'model': {
                 'name': 'X5',
@@ -144,7 +141,6 @@ class VehicleSerializerTests(TestCase):
             'model': self.vehicle_model.id,
             'outer_color': self.outer_color.id,
             'interior_color': self.interior_color.id,
-            'nickname': 'Test Vehicle'
         }
 
         for invalid_vin, case_desc in invalid_vin_cases:
@@ -153,62 +149,3 @@ class VehicleSerializerTests(TestCase):
                 serializer = VehicleSerializer(data=data)
                 self.assertFalse(serializer.is_valid())
                 self.assertIn('vin', serializer.errors)
-
-
-class NicknameSerializerTests(TestCase):
-    """Test suite for the NicknameSerializer using BDD style."""
-
-    def test_valid_nickname_scenarios(self):
-        """
-        Scenario Outline: Validating valid nickname formats
-        Given a nickname that meets all requirements
-        When validating the serializer
-        Then validation should pass
-
-        Examples:
-        | Nickname          | Description              |
-        | My Car           | Simple valid name        |
-        | Best BMW         | With brand name          |
-        | Family Car 2024  | With numbers            |
-        | <100 chars>      | Maximum length          |
-        """
-        valid_nicknames = [
-            ('My Car', 'simple valid name'),
-            ('Best BMW', 'with brand name'),
-            ('Family Car 2024', 'with numbers'),
-            ('A' * 100, 'maximum length')
-        ]
-
-        for nickname, case_desc in valid_nicknames:
-            with self.subTest(f"Valid nickname - {case_desc}"):
-                serializer = NicknameSerializer(data={'nickname': nickname})
-                self.assertTrue(serializer.is_valid())
-
-    def test_invalid_nickname_scenarios(self):
-        """
-        Scenario Outline: Validating invalid nickname formats
-        Given a nickname that violates requirements
-        When validating the serializer
-        Then validation should fail
-        And appropriate error messages should be returned
-
-        Examples:
-        | Nickname    | Description  | Expected Error                |
-        | A          | Too short    | at least 2 characters         |
-        | <101 chars> | Too long    | no more than 100 characters   |
-        | <empty>     | Empty       | may not be blank              |
-        | None        | None value  | may not be null               |
-        """
-        invalid_cases = [
-            ('A', 'too short', 'at least 2 characters'),
-            ('A' * 101, 'too long', 'no more than 100 characters'),
-            ('@#Invalid' , 'invalid vin', 'Enter a valid value.'),
-            ('', 'empty string', 'may not be blank'),
-            (None, 'null value', 'may not be null')
-        ]
-
-        for nickname, case_desc, expected_error in invalid_cases:
-            with self.subTest(f"Invalid nickname - {case_desc}"):
-                serializer = NicknameSerializer(data={'nickname': nickname})
-                self.assertFalse(serializer.is_valid())
-                self.assertIn(expected_error, str(serializer.errors['nickname']))
