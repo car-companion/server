@@ -94,16 +94,50 @@ class VehiclePermissionView(VehiclePermissionBaseView):
         vehicle = self.get_vehicle(vin)
         self.check_vehicle_ownership(vehicle, request.user)
 
-        filters = {"component__vehicle": vehicle, "user__username": username}
+        # Get base components queryset
+        components = vehicle.components.select_related('component_type').all()
         if component_type:
-            filters["component__component_type__name"] = component_type.capitalize()
+            components = components.filter(component_type__name=component_type.capitalize())
         if component_name:
-            filters["component__name"] = component_name.capitalize()
+            components = components.filter(name=component_name.capitalize())
 
+        # If it's the owner requesting
+        if vehicle.owner and vehicle.owner.username == username:
+            # For owners, return all matching components with full access
+            permissions_list = [{
+                'component_type': comp.component_type.name,
+                'component_name': comp.name,
+                'permission_type': 'write',  # Owner has full access
+                'valid_until': None
+            } for comp in components]
+
+            if permissions_list:
+                return Response([{
+                    'user': username,
+                    'permissions': permissions_list
+                }], status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"detail": "No matching components found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        # For non-owners, get explicit permissions
+        filters = {
+            "component__in": components,
+            "user__username": username
+        }
         permissions = ComponentPermission.objects.filter(**filters).select_related(
             'component', 'component__component_type', 'user'
         )
 
+        if not permissions:
+            return Response(
+                {"detail": "No permissions found for the specified criteria."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Group permissions by user
         grouped_permissions = {}
         for perm in permissions:
             user = perm.user.username

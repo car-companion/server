@@ -140,6 +140,81 @@ class VehiclePermissionReadOnlyTests(BaseVehiclePermissionTest):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
+    def test_owner_as_username_success(self):
+        """
+        Scenario: Vehicle owner requests permissions using their own username
+        Given the authenticated vehicle owner
+        When the owner's username is passed in the URL
+        Then they receive all components with full access
+        """
+        self.client.force_authenticate(user=self.owner)
+        url = self.get_permission_url(
+            self.vehicle.vin,
+            username=self.owner.username  # Owner's username
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(response.data[0]['permissions']), 1)
+        for perm in response.data[0]['permissions']:
+            self.assertEqual(perm['permission_type'], 'write')  # Full access for the owner
+            self.assertIsNone(perm['valid_until'])  # No expiration for owner permissions
+
+    def test_owner_as_username_no_components(self):
+        """
+        Scenario: Vehicle owner requests permissions but the vehicle has no components
+        Given an authenticated vehicle owner
+        When the owner's username is passed in the URL and the vehicle has no components
+        Then they receive a 404 response with a 'No matching components found' message
+        """
+        self.client.force_authenticate(user=self.owner)
+
+        # Remove all components from the vehicle
+        VehicleComponent.objects.filter(vehicle=self.vehicle).delete()
+
+        url = self.get_permission_url(
+            self.vehicle.vin,
+            username=self.owner.username  # Owner's username
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("No matching components found.", str(response.data))
+
+    def test_owner_as_username_non_matching_owner(self):
+        """
+        Scenario: Non-owner user attempts to request permissions as if they are the owner
+        Given a user who is not the owner of the vehicle
+        When the owner's username is passed in the URL
+        Then the response indicates that the requester is not authorized
+        """
+        self.client.force_authenticate(user=self.user)  # Authenticated as non-owner
+        url = self.get_permission_url(
+            self.vehicle.vin,
+            username=self.owner.username  # Owner's username
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn("You are not authorized to manage this vehicle.", str(response.data))
+
+    def test_no_permissions_found_for_user_and_filters(self):
+        """
+        Scenario: No permissions match the provided criteria
+        Given a vehicle and components but no matching permissions for the user and filters
+        When filtering permissions with criteria that yield an empty queryset
+        Then the response indicates no permissions were found
+        """
+        self.client.force_authenticate(user=self.owner)
+
+        # Ensure no permissions exist for the user and filters
+        url = self.get_permission_url(
+            self.vehicle.vin,
+            username=self.user.username,  # User with no permissions
+            component_type='Engine',      # Component type that exists but no permissions for this user
+            component_name='NonExistentComponent'  # Component name that does not exist
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("No permissions found for the specified criteria.", str(response.data))
+
 
 
 class VehiclePermissionFilteringTests(BaseVehiclePermissionTest):
