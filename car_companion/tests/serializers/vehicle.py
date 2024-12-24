@@ -106,10 +106,10 @@ class VehicleSerializerTests(TestCase):
                 'name': 'X5',
                 'manufacturer': str(self.manufacturer)
             },
-            'outer_color': {
+            'default_exterior_color': {
                 'name': 'Midnight black'
             },
-            'interior_color': {
+            'default_interior_color': {
                 'name': 'Cream white'
             }
         }
