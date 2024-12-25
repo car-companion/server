@@ -6,7 +6,7 @@ from rest_framework.test import APIClient
 
 from car_companion.models import Color
 
-User = get_user_model()
+user = get_user_model()
 
 
 class ColorListCreateViewTests(TestCase):
@@ -17,12 +17,14 @@ class ColorListCreateViewTests(TestCase):
         self.client = APIClient()
 
         # Create users
-        self.user = User.objects.create_user(
+        self.user = user.objects.create_user(
             username='testuser',
+            email='testuser@mail.com',
             password='testpass123'
         )
-        self.other_user = User.objects.create_user(
+        self.other_user = user.objects.create_user(
             username='otheruser',
+            email='otheruser@mail.com',
             password='testpass123'
         )
 

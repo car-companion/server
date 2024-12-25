@@ -14,7 +14,7 @@ from car_companion.serializers.permission import (
     AccessedVehicleSerializer
 )
 
-User = get_user_model()
+user = get_user_model()
 
 
 class GrantPermissionSerializerTests(TestCase):
@@ -172,7 +172,9 @@ class AccessedVehicleSerializerTests(TestCase):
     def setUp(self):
         """Set up test data before each test method."""
         # Create users
-        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.user = user.objects.create_user(username='testuser',
+                                             email='testuser@mail.com',
+                                             password='testpass')
 
         # Create vehicle hierarchy
         self.manufacturer = Manufacturer.objects.create(

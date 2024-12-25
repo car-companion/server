@@ -1,5 +1,5 @@
 from datetime import timedelta
-from django.contrib.auth.models import User
+from authentication.models import CustomUser
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -15,8 +15,12 @@ class BaseVehiclePermissionTest(APITestCase):
 
     def setUp(self):
         """Set up test data"""
-        self.owner = User.objects.create_user(username='owner', password='testpass')
-        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.owner = CustomUser.objects.create_user(username='owner',
+                                              email='owner@mail.com',
+                                              password='testpass')
+        self.user = CustomUser.objects.create_user(username='testuser',
+                                             email='testuser@mail.com',
+                                             password='testpass')
 
         self.manufacturer = Manufacturer.objects.create(
             name='TestMake',

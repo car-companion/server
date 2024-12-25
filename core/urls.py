@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/schema/', include((schema_patterns, 'schema'))),
     path('api/auth/', include((auth_patterns, 'auth'), namespace='auth')),
     path('api/car_companion/', include('car_companion.urls')),
+    path('', include('authentication.urls')),
     path('__debug__/', include('debug_toolbar.urls')),
 ]
 

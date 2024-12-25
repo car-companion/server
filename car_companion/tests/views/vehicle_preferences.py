@@ -23,14 +23,17 @@ class VehiclePreferencesViewTests(TestCase):
         # Create users
         self.owner = User.objects.create_user(
             username='owner',
+            email='owner@mail.com',
             password='testpass123'
         )
         self.user = User.objects.create_user(
             username='testuser',
+            email='testuser@mail.com',
             password='testpass123'
         )
         self.other_user = User.objects.create_user(
             username='otheruser',
+            email='otheruser@mail.com',
             password='testpass123'
         )
 

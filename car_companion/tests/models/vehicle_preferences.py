@@ -8,7 +8,7 @@ from car_companion.models import (
     Manufacturer, Color
 )
 
-User = get_user_model()
+user = get_user_model()
 
 
 class VehicleUserPreferencesTests(TestCase):
@@ -20,12 +20,14 @@ class VehicleUserPreferencesTests(TestCase):
     def setUp(self):
         """Set up test data before each test method."""
         # Create basic objects needed for testing
-        self.user = User.objects.create_user(
+        self.user = user.objects.create_user(
             username='testuser',
+            email='testuser@mail.com',
             password='testpass123'
         )
-        self.other_user = User.objects.create_user(
+        self.other_user = user.objects.create_user(
             username='otheruser',
+            email='otheruser@mail.com',
             password='testpass123'
         )
 
