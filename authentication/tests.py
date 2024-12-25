@@ -2,6 +2,7 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import requests
+import json
 from django.core import mail
 from django.test import RequestFactory
 from django.test import TestCase
@@ -254,95 +255,47 @@ class PasswordResetTests(TestCase):
         Then the password reset form is rendered
         """
         response = self.client.get(reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'reset_password_form.html')
 
     @patch('requests.post')
-    def test_password_reset_success(self, mock_post):
+    def test_password_reset_valid_post(self, mock_post):
         """
         Scenario: User successfully resets their password
         Given valid UID, token, and new password
         When the POST request is made
-        Then the password is reset successfully
+        Then the password reset is processed successfully
         """
         mock_post.return_value.status_code = 204
+
         response = self.client.post(
             reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
             data={'new_password': 'newpassword123'}
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Password reset successfully', response.content.decode())
+        self.assertIn("Password reset successfully", response.content.decode())
+
+    def test_password_reset_missing_password(self):
+        """
+        Scenario: Password reset fails due to missing new password
+        Given a POST request without a new password
+        When the request is made
+        Then a 400 error is returned indicating the missing password
+        """
+        response = self.client.post(
+            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
+            data={}
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("New password is required", response.content.decode())
 
     @patch('requests.post')
     def test_password_reset_invalid_token(self, mock_post):
         """
         Scenario: Password reset fails due to invalid token
-        Given an invalid token
-        When the POST request is made
-        Then the reset fails with an error message
-        """
-        mock_post.return_value.status_code = 400
-        mock_post.return_value.json.return_value = {'token': ['This token is invalid or expired.']}
-        response = self.client.post(
-            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'invalid-token'}),
-            data={'new_password': 'newpassword123'}
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('This token is invalid or expired.', response.content.decode())
-
-    @patch('requests.post')
-    def test_password_reset_missing_password(self, mock_post):
-        """
-        Scenario: Password reset fails due to missing password
-        Given a POST request without a new password
-        When the request is made
-        Then the reset fails with a 400 error
-        """
-        response = self.client.post(reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
-                                    data={})
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('New password is required', response.content.decode())
-
-    @patch('requests.post')
-    def test_password_reset_request_exception(self, mock_post):
-        """
-        Scenario: Password reset fails due to a request exception
-        Given a request failure during password reset
-        When the POST request is made
-        Then a server error is returned
-        """
-        mock_post.side_effect = requests.RequestException('Request failed')
-        response = self.client.post(
-            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
-            data={'new_password': 'newpassword123'}
-        )
-        self.assertEqual(response.status_code, 500)
-        self.assertIn('Password reset failed: Request failed', response.content.decode())
-
-    @patch('requests.post')
-    def test_password_reset_post_branch(self, mock_post):
-        """
-        Scenario: User submits a password reset via POST
-        Given a valid UID and token
-        When the POST request is made
-        Then the password reset is processed
-        """
-        mock_post.return_value.status_code = 204
-
-        response = self.client.post(
-            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
-            data={'new_password': 'securepassword'}
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Password reset successfully", response.content.decode())
-
-    @patch('requests.post')
-    def test_password_reset_invalid_token_error_handling(self, mock_post):
-        """
-        Scenario: Password reset fails due to an invalid token
-        Given the Djoser endpoint returns a 400 error with token-specific errors
-        When the POST request is made
-        Then the error message is displayed
+        Given a POST request with an invalid token
+        When the Djoser endpoint returns a 400 error with token-specific details
+        Then an appropriate error message is displayed
         """
         mock_post.return_value.status_code = 400
         mock_post.return_value.json.return_value = {'token': ['This token is invalid or expired.']}
@@ -355,15 +308,15 @@ class PasswordResetTests(TestCase):
         self.assertIn("This token is invalid or expired.", response.content.decode())
 
     @patch('requests.post')
-    def test_password_reset_generic_error_handling(self, mock_post):
+    def test_password_reset_generic_error(self, mock_post):
         """
         Scenario: Password reset fails with a generic 400 error
-        Given the Djoser endpoint returns a 400 error without token-specific details
+        Given the Djoser endpoint returns a 400 error without specific details
         When the POST request is made
         Then a generic error message is returned
         """
         mock_post.return_value.status_code = 400
-        mock_post.return_value.json.return_value = {}  # No specific errors provided
+        mock_post.return_value.json.return_value = {}
 
         response = self.client.post(
             reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
@@ -378,7 +331,7 @@ class PasswordResetTests(TestCase):
         Scenario: Password reset fails with an unexpected status code
         Given the Djoser endpoint returns an unexpected status code
         When the POST request is made
-        Then the response body and status code are returned as-is
+        Then the raw response body and status code are returned
         """
         mock_post.return_value.status_code = 500
         mock_post.return_value.json.return_value = {'detail': 'Internal server error'}
@@ -388,17 +341,33 @@ class PasswordResetTests(TestCase):
             data={'new_password': 'newpassword123'}
         )
 
-        # Update assertions to match actual response format
         self.assertEqual(response.status_code, 500)
-        self.assertIn("detail", response.content.decode())
+        self.assertIn("Internal server error", json.loads(response.content.decode())['detail'])
 
-    def test_reset_password_page_get_logic(self):
+    @patch('requests.post')
+    def test_password_reset_network_error(self, mock_post):
         """
-        Scenario: User accesses the reset password page with a GET request
-        Given a valid UID and token
-        When the request method is GET
-        Then the password reset form should be rendered
+        Scenario: Password reset fails due to a network error
+        Given the Djoser endpoint is unreachable
+        When the POST request is made
+        Then a 500 error is returned with a descriptive message
         """
-        response = self.client.get(reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'reset_password_form.html')
+        mock_post.side_effect = requests.RequestException('Network error')
+
+        response = self.client.post(
+            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
+            data={'new_password': 'newpassword123'}
+        )
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("Password reset failed: Network error", response.content.decode())
+
+    def test_reset_password_page_invalid_method(self):
+        """
+        Scenario: User makes an invalid HTTP request to the password reset page
+        Given a request method other than GET or POST
+        When the request is processed
+        Then a 405 Method Not Allowed error is returned
+        """
+        response = self.client.put(reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}))
+        self.assertEqual(response.status_code, 405)
+        self.assertIn("", response.content.decode())

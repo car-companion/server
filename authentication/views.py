@@ -1,5 +1,6 @@
 import requests
-from django.http import HttpResponse
+import json
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
@@ -85,14 +86,18 @@ def reset_password_page(request, uid, token):
             elif response.status_code == 400:
                 # Handle specific error messages
                 response_data = response.json()
-                if 'token' in response_data:
-                    error_message = response_data['token'][0]  # Example: "This token is invalid or expired."
-                else:
-                    error_message = 'An error occurred while resetting your password.'
+                error_message = response_data.get('token', ['An error occurred while resetting your password.'])[0]
                 return HttpResponse(error_message, status=400)
 
             # Generic error
-            return HttpResponse(response.json(), status=response.status_code)
+            return HttpResponse(
+                json.dumps(response.json()),
+                content_type='application/json',
+                status=response.status_code
+            )
 
         except requests.RequestException as e:
             return HttpResponse(f'Password reset failed: {str(e)}', status=500)
+
+    # Handle unsupported methods
+    return HttpResponseNotAllowed(['GET', 'POST'])
