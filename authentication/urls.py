@@ -1,5 +1,6 @@
 from django.urls import path
-from authentication.views import ActivateAccountView
+from authentication.views import ActivateAccountView, reset_password_page
+
 
 urlpatterns = [
     path(
@@ -7,4 +8,7 @@ urlpatterns = [
         ActivateAccountView.as_view(),
         name='activate-account'
     ),
+    path('api/auth/users/reset_password_confirm/<str:uid>/<str:token>/', reset_password_page,
+         name='reset-password-page'),
+
 ]

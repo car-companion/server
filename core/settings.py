@@ -154,6 +154,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("JWT",),
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
 # -----------------------------------------------------------------------------
@@ -163,8 +164,7 @@ DJOSER = {
     "SEND_ACTIVATION_EMAIL": True,
     "SEND_CONFIRMATION_EMAIL": True,
     "ACTIVATION_URL": "api/auth/users/activation/{uid}/{token}",
-    "PASSWORD_RESET_CONFIRM_URL": "api/auth/password/reset/confirm/{uid}/{token}",
-    "USERNAME_RESET_CONFIRM_URL": "api/auth/username/reset/confirm/{uid}/{token}",
+    "PASSWORD_RESET_CONFIRM_URL": "api/auth/users/reset_password_confirm/{uid}/{token}",
     "EMAIL": {
         "activation": "authentication.emails.ActivationEmail",
         "password_reset": "authentication.emails.PasswordResetEmail",
@@ -178,6 +178,7 @@ DJOSER = {
 # -----------------------------------------------------------------------------
 # Email Settings
 # -----------------------------------------------------------------------------
+SITE_NAME = env("SITE_NAME")
 EMAIL_BACKEND = env("EMAIL_BACKEND")
 EMAIL_HOST = env("EMAIL_HOST")
 EMAIL_PORT = env.int("EMAIL_PORT")
