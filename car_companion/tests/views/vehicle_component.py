@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from authentication.models import CustomUser
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
@@ -15,8 +15,12 @@ class ComponentViewsTests(APITestCase):
     def setUp(self):
         """Set up test data."""
         # Create users
-        self.user = User.objects.create_user(username='testuser', password='testpass')
-        self.other_user = User.objects.create_user(username='otheruser', password='testpass')
+        self.user = CustomUser.objects.create_user(username='testuser',
+                                                   email='testuser@mail.com',
+                                                   password='testpass')
+        self.other_user = CustomUser.objects.create_user(username='otheruser',
+                                                         email='otheruser@mail.com',
+                                                         password='testpass')
 
         # Create base data
         self.manufacturer = Manufacturer.objects.create(
@@ -505,7 +509,9 @@ class ComponentViewsTests(APITestCase):
         Then they receive appropriate responses based on their permissions
         """
         # Create a user with read permission
-        read_user = User.objects.create_user(username='readuser', password='testpass')
+        read_user = CustomUser.objects.create_user(username='readuser',
+                                                   email='readuser@mail.com',
+                                                   password='testpass')
         read_permission = ComponentPermission.objects.create(
             component=self.engine,
             user=read_user,
@@ -513,7 +519,9 @@ class ComponentViewsTests(APITestCase):
         )
 
         # Create a user with write permission
-        write_user = User.objects.create_user(username='writeuser', password='testpass')
+        write_user = CustomUser.objects.create_user(username='writeuser',
+                                                    email='writeuser@mail.com',
+                                                    password='testpass')
         write_permission = ComponentPermission.objects.create(
             component=self.engine,
             user=write_user,
@@ -558,7 +566,9 @@ class ComponentViewsTests(APITestCase):
         When they request components by type
         Then they only receive components they have permission for
         """
-        mixed_user = User.objects.create_user(username='mixeduser', password='testpass')
+        mixed_user = CustomUser.objects.create_user(username='mixeduser',
+                                                    email='mixeduser@mail.com',
+                                                    password='testpass')
 
         # Give read access to engine
         ComponentPermission.objects.create(
@@ -598,7 +608,9 @@ class ComponentViewsTests(APITestCase):
         When they attempt to update all components of a type
         Then only components they have write permission for are updated
         """
-        write_user = User.objects.create_user(username='writeuser', password='testpass')
+        write_user = CustomUser.objects.create_user(username='writeuser',
+                                                    email='writeuser@mail.com',
+                                                    password='testpass')
 
         # Give write permission to two tires only
         ComponentPermission.objects.create(
@@ -639,7 +651,9 @@ class ComponentViewsTests(APITestCase):
         Then they only receive components they have permission for
         """
         # Create a user with mixed permissions
-        mixed_user = User.objects.create_user(username='mixeduser', password='testpass')
+        mixed_user = CustomUser.objects.create_user(username='mixeduser',
+                                                    email='miexeduser@mail.com',
+                                                    password='testpass')
 
         # Give read access to engine
         ComponentPermission.objects.create(

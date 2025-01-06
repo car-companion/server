@@ -139,7 +139,6 @@ class VehicleTests(TestCase):
                     with self.assertRaises(ValidationError):
                         vehicle.full_clean()
 
-
     def test_required_relationships(self):
         """
         Scenario: Testing required relationship validation
@@ -163,8 +162,6 @@ class VehicleTests(TestCase):
                 with self.assertRaises(ValidationError) as context:
                     vehicle.full_clean()
                 self.assertIn(expected_error, str(context.exception))
-
-
 
     def test_manufacturer_property(self):
         """
@@ -526,8 +523,9 @@ class VehicleComponentTests(TestCase):
         When converting to string
         Then it should include owner information
         """
-        from django.contrib.auth.models import User
-        owner = User.objects.create(username='testuser')
+        from authentication.models import CustomUser
+        owner = CustomUser.objects.create(username='testuser',
+                                          email='testuser@mail.com')
         vehicle = Vehicle.objects.create(
             vin="NBA88888888888888",
             year_built=2023,

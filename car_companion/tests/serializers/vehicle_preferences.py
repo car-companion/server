@@ -1,18 +1,17 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.test import TestCase
 from rest_framework import serializers
-from django.utils.translation import gettext_lazy as _
 
 from car_companion.models import (
     VehicleUserPreferences, Color, Vehicle, VehicleModel,
     Manufacturer
 )
 from car_companion.serializers.vehicle_preferences import (
-    ColorSerializer, PreferencesSerializer, ColorFieldWithCreation,
+    PreferencesSerializer, ColorFieldWithCreation,
     PreferencesUpdateSerializer, VehiclePreferencesSerializer
 )
 
-User = get_user_model()
+user = get_user_model()
 
 
 class BasePreferencesTestCase(TestCase):
@@ -21,12 +20,14 @@ class BasePreferencesTestCase(TestCase):
     def setUp(self):
         """Set up test data."""
         # Create users
-        self.user = User.objects.create_user(
+        self.user = user.objects.create_user(
             username='testuser',
+            email='testuser@mail.com',
             password='testpass123'
         )
-        self.other_user = User.objects.create_user(
+        self.other_user = user.objects.create_user(
             username='otheruser',
+            email='otheruser@mail.com',
             password='testpass123'
         )
 

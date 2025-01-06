@@ -20,8 +20,8 @@ class VehicleModelAdminTests(TestCase):
         And test models exist in the database
         """
         # Create superuser
-        User = get_user_model()
-        self.admin_user = User.objects.create_superuser(
+        user = get_user_model()
+        self.admin_user = user.objects.create_superuser(
             username='admin',
             email='admin@example.com',
             password='adminpass123'

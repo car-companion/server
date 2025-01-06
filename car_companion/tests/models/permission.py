@@ -9,7 +9,7 @@ from guardian.shortcuts import get_perms
 
 from ...models import VehicleComponent, ComponentType, ComponentPermission, Manufacturer, VehicleModel, Color, Vehicle
 
-User = get_user_model()
+user = get_user_model()
 
 
 class ComponentPermissionModelTests(TestCase):
@@ -22,12 +22,14 @@ class ComponentPermissionModelTests(TestCase):
     def setUpTestData(cls):
         """Set up data for the entire test suite."""
         # Create users
-        cls.user = User.objects.create_user(
+        cls.user = user.objects.create_user(
             username='testuser',
+            email='testuser@mail.com',
             password='testpass123'
         )
-        cls.granter = User.objects.create_user(
+        cls.granter = user.objects.create_user(
             username='granter',
+            email='grantter@mail.com',
             password='testpass123'
         )
 
@@ -261,7 +263,8 @@ class ComponentPermissionModelTests(TestCase):
 
         permission2 = ComponentPermission.objects.create(
             component=self.component,
-            user=User.objects.create_user(username='user2'),
+            user=user.objects.create_user(username='user2',
+                                          email='user2@mail.com'),
             permission_type=ComponentPermission.PermissionType.READ,
             granted_by=self.granter
         )
