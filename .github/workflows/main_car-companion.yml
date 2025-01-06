@@ -30,7 +30,9 @@ jobs:
       
       - name: Install poetry
         uses: abatilo/actions-poetry@v2
-      
+        with:
+          poetry-version: '1.8.5'
+
       - name: Make Oryx happy with requirements.txt
         working-directory: ${{ inputs.function_directory }}
         run: |
