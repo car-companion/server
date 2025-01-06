@@ -1,71 +1,102 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: 'Test, build and deploy Python app to Azure Web App: car-companion-dev'
+name: 'CI'
 
 on:
   pull_request:
     branches:
-    - development
+      - development
   push:
     branches:
-    - development
+      - development
+    paths-ignore:
+      - coverage-badge.svg
   workflow_dispatch:
 
 jobs:
   test-build-and-deploy:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up Python version
-      uses: actions/setup-python@v1
-      with:
-        python-version: '3.12'
-    
-    - name: Install poetry
-      uses: abatilo/actions-poetry@v2
-    
-    - name: Make Oryx happy with requirements.txt
-      working-directory: ${{ inputs.function_directory }}
-      run: |
-        poetry export --without-hashes --format=requirements.txt > requirements.txt
+      - name: Set up Python version
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.12'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: '1.8.5'
 
-    - name: Run tests with coverage
-      env:
-        ALLOWED_HOSTS: "127.0.0.1,localhost"
-        CSRF_TRUSTED_ORIGINS: "http://127.0.0.1,http://localhost"
-        DEBUG: "True"
-        DB_ENGINE: "django.db.backends.postgresql"
-        DB_HOST: ${{ secrets.DB_HOST_DEV }}
-        DB_NAME: ${{ secrets.DB_NAME_DEV }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD_DEV }}
-        DB_PORT: ${{ secrets.DB_PORT_DEV }}
-        DB_USER: ${{ secrets.DB_USER_DEV }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY_DEV }}
-      run: |
-        coverage run manage.py test
-        coverage report
+      - name: Make Oryx happy with requirements.txt
+        working-directory: ${{ inputs.function_directory }}
+        run: |
+          poetry export --without-hashes --format=requirements.txt > requirements.txt
 
-    - name: Deploy to Azure Web App (only on push, not PR)
-      if: github.event_name != 'pull_request'
-      uses: azure/webapps-deploy@v2
-      with: 
-        app-name: 'car-companion-dev'
-        slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_Development }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install coverage coverage-badge
 
-    - name: Run Health Check (only on push, not PR)
-      if: github.event_name != 'pull_request'
-      run: |
-        status_code=$(curl -s -o /dev/null -w "%{http_code}" https://car-companion-dev.azurewebsites.net/health/?format=json)
-        if [ "$status_code" -ne 200 ]; then
-          echo "Health check failed with status $status_code"
-          exit 1
-        fi
+      - name: Run tests with coverage and generate badge
+        env:
+          ALLOWED_HOSTS: "127.0.0.1,localhost"
+          CSRF_TRUSTED_ORIGINS: "http://127.0.0.1,http://localhost"
+          DEBUG: "True"
+          DB_ENGINE: "django.db.backends.postgresql"
+          DB_HOST: ${{ secrets.DB_HOST_DEV }}
+          DB_NAME: ${{ secrets.DB_NAME_DEV }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD_DEV }}
+          DB_PORT: ${{ secrets.DB_PORT_DEV }}
+          DB_USER: ${{ secrets.DB_USER_DEV }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY_DEV }}
+          SITE_NAME: ${{ secrets.SITE_NAME}}
+          EMAIL_BACKEND: ${{ secrets.EMAIL_BACKEND}}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST}}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT}}
+          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS}}
+          EMAIL_USE_SSL: ${{ secrets.EMAIL_USE_SSL}}
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER}}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD}}
+          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL}}
+#          FRONTEND_URL: ${{ secrets.FRONTEND_URL}}
+        run: |
+          coverage run manage.py test --noinput
+          coverage report
+          coverage-badge -f -o coverage-badge.svg
+
+      - name: Save and commit coverage badge
+        if: github.event_name != 'pull_request'
+        run: |
+          if [[ $(git diff --exit-code coverage-badge.svg) ]]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "GitHub Actions"
+            git add coverage-badge.svg
+            git commit -m "Update coverage badge"
+            git push
+          else
+            echo "No changes in coverage-badge.svg, skipping commit."
+          fi
+
+      - name: Deploy to Azure Web App (only on push, not PR)
+        if: github.event_name != 'pull_request'
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'car-companion-dev'
+          slot-name: 'production'
+          publish-profile: ${{ secrets.AzureAppService_PublishProfile_Development }}
+
+      - name: Run Health Check (only on push, not PR)
+        if: github.event_name != 'pull_request'
+        run: |
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" https://car-companion-dev.azurewebsites.net/health/?format=json)
+          if [ "$status_code" -ne 200 ]; then
+            echo "Health check failed with status $status_code"
+            exit 1
+          fi
