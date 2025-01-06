@@ -187,7 +187,7 @@ EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
-FRONTEND_URL = env("FRONTEND_URL")
+# FRONTEND_URL = env("FRONTEND_URL")
 
 # -----------------------------------------------------------------------------
 # Debug Toolbar
