@@ -58,27 +58,42 @@ class ActivateAccountView(APIView):
             )
 
 
-def reset_password_page(request, uid, token):
+class ResetPasswordView(APIView):
     """
-    Handle password reset form display and submission.
-    - GET: Render the form for the user to input a new password.
-    - POST: Use the uid and token from the URL, along with the new password, to send a POST request.
+    Handle password reset confirmation through POST requests.
+    - GET: (Optional if needed, for example, serving a form template)
+    - POST: Forward reset password request to the Djoser endpoint.
     """
-    if request.method == 'GET':
-        # Render a page for entering the new password
-        return render(request, 'reset_password_form.html', {'uid': uid, 'token': token})
 
-    elif request.method == 'POST':
-        # Read the new password from the submitted form
-        new_password = request.POST.get('new_password')
+    def get(self, request, uid, token):
+        """
+        Serve a placeholder response or render a template for reset password.
+        """
+        return Response(
+            {
+                'detail': 'This endpoint is for password reset confirmation. Please send a POST request with the required data.'},
+            status=status.HTTP_200_OK
+        )
+
+    def post(self, request, uid, token):
+        """
+        Handle password reset confirmation by forwarding the request to Djoser.
+        """
+        # Extract the new password from the request data
+        new_password = request.data.get('new_password')
 
         if not new_password:
-            return HttpResponse('New password is required', status=400)
+            return Response(
+                {'detail': 'New password is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # Construct the payload for the Djoser endpoint
+        # Construct the Djoser reset password endpoint URL
         current_host = request.get_host()
         request.scheme = 'https' if request.is_secure() else 'http'
         reset_password_url = f"{request.scheme}://{current_host}/api/auth/users/reset_password_confirm/"
+
+        # Prepare payload for the Djoser endpoint
         payload = {
             'uid': uid,
             'token': token,
@@ -97,23 +112,30 @@ def reset_password_page(request, uid, token):
 
             if response.status_code == 204:
                 # Success
-                return HttpResponse('Password reset successfully. You can now log in.', status=200)
+                return Response(
+                    {'detail': 'Password reset successfully. You can now log in.'},
+                    status=status.HTTP_200_OK
+                )
 
-            elif response.status_code == 400:
-                # Handle specific error messages
+            # Handle errors from Djoser
+            try:
                 response_data = response.json()
-                error_message = response_data.get('token', ['An error occurred while resetting your password.'])[0]
-                return HttpResponse(error_message, status=400)
+            except ValueError:
+                response_data = response.text
 
-            # Generic error
-            return HttpResponse(
-                json.dumps(response.json()),
-                content_type='application/json',
+            return Response(
+                {'detail': response_data},
                 status=response.status_code
             )
 
-        except requests.RequestException as e:
-            return HttpResponse(f'Password reset failed: {str(e)}', status=500)
+        except requests.Timeout:
+            return Response(
+                {'detail': 'Password reset request timed out'},
+                status=status.HTTP_504_GATEWAY_TIMEOUT
+            )
 
-    # Handle unsupported methods
-    return HttpResponseNotAllowed(['GET', 'POST'])
+        except requests.RequestException as e:
+            return Response(
+                {'detail': f'Password reset failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
