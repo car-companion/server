@@ -8,7 +8,6 @@ from rest_framework.views import APIView
 from socket import timeout as SocketTimeout
 
 
-
 class ActivateAccountView(APIView):
     """Handle account activation through GET requests."""
 
@@ -22,7 +21,9 @@ class ActivateAccountView(APIView):
             response = requests.post(
                 activation_url,
                 json={'uid': uid, 'token': token},
-                headers={'Content-Type': 'application/json'}
+                headers={'Content-Type': 'application/json'},
+                timeout=(3.05, 27),
+                allow_redirects=True
             )
 
             try:
