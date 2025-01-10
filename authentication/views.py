@@ -24,10 +24,11 @@ class ActivateAccountView(APIView):
         print(current_host)
         logger.info(f"Activation request started for uid: {uid} from host: {current_host}")
 
-        activation_url = f"{request.scheme}://{current_host}/api/auth/users/activation/"
+        # activation_url = f"{request.scheme}://{current_host}/api/auth/users/activation/"
+        activation_url = f"{request.build_absolute_uri('/api/auth/users/activation/')}"
         logger.info(f"Activation URL: {activation_url}")
         print(activation_url)
-        # activation_url = f"{request.build_absolute_uri('/')[:-1]}/api/auth/users/activation/"
+
 
         try:
             logger.info("Sending activation request")
