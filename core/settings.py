@@ -239,3 +239,5 @@ LOGGING = {
 # SECURE_SSL_REDIRECT = True
 # CSRF_COOKIE_SECURE = True
 # SESSION_COOKIE_SECURE = True
+SITE_URL = "https://car-companion-dev.azurewebsites.net"  # Ensure this is the correct HTTPS URL
+DEFAULT_DOMAIN = "https://car-companion-dev.azurewebsites.net/"
