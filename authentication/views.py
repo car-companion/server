@@ -6,6 +6,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from socket import timeout as SocketTimeout
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 
 class ActivateAccountView(APIView):
@@ -15,9 +19,16 @@ class ActivateAccountView(APIView):
         """
         Activate user account by forwarding activation request to Djoser endpoint.
         """
-        activation_url = f"{request.build_absolute_uri('/')[:-1]}/api/auth/users/activation/"
+        # Get the current host
+        current_host = request.get_host()
+        logger.info(f"Activation request started for uid: {uid} from host: {current_host}")
+
+        activation_url = f"{request.scheme}://{current_host}/api/auth/users/activation/"
+        logger.info(f"Activation URL: {activation_url}")
+        # activation_url = f"{request.build_absolute_uri('/')[:-1]}/api/auth/users/activation/"
 
         try:
+            logger.info("Sending activation request")
             response = requests.post(
                 activation_url,
                 json={'uid': uid, 'token': token},
@@ -25,11 +36,17 @@ class ActivateAccountView(APIView):
                 timeout=(3.05, 27),
                 allow_redirects=True
             )
+            logger.info(f"Response received: {response.status_code}")
+
 
             try:
                 response_data = response.json()
+                logger.info(f"Response data: {response_data}")
+
             except ValueError:
                 response_data = response.text
+                logger.info(f"Raw response: {response_data}")
+
 
             if response.status_code == 204:
                 return Response(
@@ -43,10 +60,13 @@ class ActivateAccountView(APIView):
             )
 
         except requests.Timeout:
+            logger.error("Request timed out")
+
             return Response(
                 {'detail': 'Activation request timed out'},
                 status=status.HTTP_504_GATEWAY_TIMEOUT
             )
+
         except SocketTimeout:
             return Response(
                 {'detail': 'Email server connection timed out'},
@@ -54,6 +74,8 @@ class ActivateAccountView(APIView):
             )
 
         except requests.RequestException as e:
+            logger.error(f"Activation failed: {str(e)}")
+
             return Response(
                 {'detail': f'Activation failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
