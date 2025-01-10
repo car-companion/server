@@ -21,6 +21,7 @@ class ActivateAccountView(APIView):
         """
         # Get the current host
         current_host = request.get_host()
+        print(current_host)
         logger.info(f"Activation request started for uid: {uid} from host: {current_host}")
 
         activation_url = f"{request.scheme}://{current_host}/api/auth/users/activation/"
@@ -37,11 +38,13 @@ class ActivateAccountView(APIView):
                 allow_redirects=True
             )
             logger.info(f"Response received: {response.status_code}")
+            print(response.status_code)
 
 
             try:
                 response_data = response.json()
                 logger.info(f"Response data: {response_data}")
+                print(response.status_code)
 
             except ValueError:
                 response_data = response.text
