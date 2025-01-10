@@ -176,7 +176,6 @@ DJOSER = {
     "PROTOCOL": "https",
 }
 
-
 # -----------------------------------------------------------------------------
 # Email Settings
 # -----------------------------------------------------------------------------
@@ -189,7 +188,6 @@ EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=5)
-# DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
 
 # -----------------------------------------------------------------------------
@@ -221,7 +219,6 @@ UNFOLD = {
 # -----------------------------------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -237,8 +234,3 @@ LOGGING = {
         },
     },
 }
-
-# SECURE_SSL_REDIRECT = True
-# CSRF_COOKIE_SECURE = True
-# SESSION_COOKIE_SECURE = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
