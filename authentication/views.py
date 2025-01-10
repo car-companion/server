@@ -5,6 +5,8 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from socket import timeout as SocketTimeout
+
 
 
 class ActivateAccountView(APIView):
@@ -37,6 +39,17 @@ class ActivateAccountView(APIView):
             return Response(
                 {'detail': response_data},
                 status=response.status_code
+            )
+
+        except requests.Timeout:
+            return Response(
+                {'detail': 'Activation request timed out'},
+                status=status.HTTP_504_GATEWAY_TIMEOUT
+            )
+        except SocketTimeout:
+            return Response(
+                {'detail': 'Email server connection timed out'},
+                status=status.HTTP_504_GATEWAY_TIMEOUT
             )
 
         except requests.RequestException as e:
