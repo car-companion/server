@@ -173,7 +173,9 @@ DJOSER = {
     "SERIALIZERS": {
         "user_create": "authentication.serializers.UserRegistrationSerializer",  # Custom serializer
     },
+    "PROTOCOL": "https",
 }
+
 
 # -----------------------------------------------------------------------------
 # Email Settings
@@ -239,5 +241,4 @@ LOGGING = {
 # SECURE_SSL_REDIRECT = True
 # CSRF_COOKIE_SECURE = True
 # SESSION_COOKIE_SECURE = True
-SITE_URL = "https://car-companion-dev.azurewebsites.net"  # Ensure this is the correct HTTPS URL
-DEFAULT_DOMAIN = "https://car-companion-dev.azurewebsites.net"
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

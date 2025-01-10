@@ -21,11 +21,12 @@ class ActivateAccountView(APIView):
         """
         # Get the current host
         current_host = request.get_host()
-        print(current_host)
+        print(request.is_secure())
+        request.scheme = 'https' if request.is_secure() else 'http'
+        activation_url = f"{request.scheme}://{current_host}/api/auth/users/activation/"
         logger.info(f"Activation request started for uid: {uid} from host: {current_host}")
 
-        # activation_url = f"{request.scheme}://{current_host}/api/auth/users/activation/"
-        activation_url = f"{request.build_absolute_uri('/api/auth/users/activation/')}"
+        # activation_url = f"{request.build_absolute_uri('/api/auth/users/activation/')}"
         logger.info(f"Activation URL: {activation_url}")
         print(activation_url)
 
