@@ -18,15 +18,17 @@ class ActivateAccountView(APIView):
         current_host = request.get_host()
         request.scheme = 'https' if request.is_secure() else 'http'
         activation_url = f"{request.scheme}://{current_host}/api/auth/users/activation/"
+        print(activation_url)
 
         try:
             response = requests.post(
                 activation_url,
                 json={'uid': uid, 'token': token},
                 headers={'Content-Type': 'application/json'},
-                timeout=(12, 50),
+                timeout=(2, 8),
                 allow_redirects=True
             )
+            print('response is ready')
 
             try:
                 response_data = response.json()
@@ -34,7 +36,9 @@ class ActivateAccountView(APIView):
             except ValueError:
                 response_data = response.text
 
+            print(response.status_code)
             if response.status_code == 204:
+                print('Account activated successfully')
                 return Response(
                     {'detail': 'Account activated successfully'},
                     status=status.HTTP_200_OK
@@ -102,7 +106,7 @@ class ResetPasswordView(APIView):
                 reset_password_url,
                 json=payload,
                 headers={'Content-Type': 'application/json'},
-                timeout=(12, 50),
+                timeout=(2, 8),
                 allow_redirects=True
             )
 
