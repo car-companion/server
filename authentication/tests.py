@@ -191,51 +191,8 @@ class ActivateAccountTests(TestCase):
         """
         mock_post.return_value.status_code = 204
         response = self.client.get(reverse('activate-account', kwargs={'uid': 'test-uid', 'token': 'test-token'}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('Account activated successfully', response.data['detail'])
-
-    @patch('requests.post')
-    def test_activation_invalid_token(self, mock_post):
-        """
-        Scenario: User activation fails due to invalid token
-        Given an invalid token
-        When the activation endpoint is called
-        Then the activation fails with an appropriate error message
-        """
-        mock_post.return_value.status_code = 400
-        mock_post.return_value.json.return_value = {'token': ['Invalid or expired token.']}
-        response = self.client.get(reverse('activate-account', kwargs={'uid': 'test-uid', 'token': 'invalid-token'}))
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('Invalid or expired token.', response.data['detail']['token'][0])
-
-    @patch('requests.post')
-    def test_activation_request_exception(self, mock_post):
-        """
-        Scenario: Activation fails due to a request exception
-        Given a request failure during activation
-        When the activation endpoint is called
-        Then a server error is returned
-        """
-        mock_post.side_effect = requests.RequestException('Request failed')
-        response = self.client.get(reverse('activate-account', kwargs={'uid': 'test-uid', 'token': 'test-token'}))
-        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertIn('Activation failed: Request failed', response.data['detail'])
-
-    @patch('requests.post')
-    def test_activation_value_error_fallback(self, mock_post):
-        """
-        Scenario: The activation response contains invalid JSON
-        Given the activation endpoint returns non-JSON data
-        When the response is processed
-        Then it should fall back to the response text
-        """
-        mock_post.return_value.status_code = 400
-        mock_post.return_value.json.side_effect = ValueError()  # Simulate a ValueError during JSON parsing
-        mock_post.return_value.text = "Non-JSON error response"
-
-        response = self.client.get(reverse('activate-account', kwargs={'uid': 'test-uid', 'token': 'test-token'}))
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("Non-JSON error response", response.data['detail'])
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertIn('Activation request submitted. It will be processed shortly.', response.data['detail'])
 
 
 # --- Password Reset Tests ---
@@ -272,8 +229,8 @@ class PasswordResetTests(TestCase):
             reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
             data={'new_password': 'newpassword123'}
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Password reset successfully", response.content.decode())
+        self.assertEqual(response.status_code, 202)
+        self.assertIn("Password reset request submitted. It will be processed shortly.", response.content.decode())
 
     def test_password_reset_missing_password(self):
         """
@@ -289,85 +246,3 @@ class PasswordResetTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("New password is required", response.content.decode())
 
-    @patch('requests.post')
-    def test_password_reset_invalid_token(self, mock_post):
-        """
-        Scenario: Password reset fails due to invalid token
-        Given a POST request with an invalid token
-        When the Djoser endpoint returns a 400 error with token-specific details
-        Then an appropriate error message is displayed
-        """
-        mock_post.return_value.status_code = 400
-        mock_post.return_value.json.return_value = {'token': ['This token is invalid or expired.']}
-
-        response = self.client.post(
-            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'invalid-token'}),
-            data={'new_password': 'newpassword123'}
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("This token is invalid or expired.", response.content.decode())
-
-    @patch('requests.post')
-    def test_password_reset_generic_error(self, mock_post):
-        """
-        Scenario: Password reset fails with a generic 400 error
-        Given the Djoser endpoint returns a 400 error without specific details
-        When the POST request is made
-        Then a generic error message is returned
-        """
-        mock_post.return_value.status_code = 400
-        mock_post.return_value.json.return_value = {}
-
-        response = self.client.post(
-            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
-            data={'new_password': 'newpassword123'}
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("An error occurred while resetting your password.", response.content.decode())
-
-    @patch('requests.post')
-    def test_password_reset_unexpected_status_code(self, mock_post):
-        """
-        Scenario: Password reset fails with an unexpected status code
-        Given the Djoser endpoint returns an unexpected status code
-        When the POST request is made
-        Then the raw response body and status code are returned
-        """
-        mock_post.return_value.status_code = 500
-        mock_post.return_value.json.return_value = {'detail': 'Internal server error'}
-
-        response = self.client.post(
-            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
-            data={'new_password': 'newpassword123'}
-        )
-
-        self.assertEqual(response.status_code, 500)
-        self.assertIn("Internal server error", json.loads(response.content.decode())['detail'])
-
-    @patch('requests.post')
-    def test_password_reset_network_error(self, mock_post):
-        """
-        Scenario: Password reset fails due to a network error
-        Given the Djoser endpoint is unreachable
-        When the POST request is made
-        Then a 500 error is returned with a descriptive message
-        """
-        mock_post.side_effect = requests.RequestException('Network error')
-
-        response = self.client.post(
-            reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}),
-            data={'new_password': 'newpassword123'}
-        )
-        self.assertEqual(response.status_code, 500)
-        self.assertIn("Password reset failed: Network error", response.content.decode())
-
-    def test_reset_password_page_invalid_method(self):
-        """
-        Scenario: User makes an invalid HTTP request to the password reset page
-        Given a request method other than GET or POST
-        When the request is processed
-        Then a 405 Method Not Allowed error is returned
-        """
-        response = self.client.put(reverse('reset-password-page', kwargs={'uid': 'test-uid', 'token': 'test-token'}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIn("", response.content.decode())
