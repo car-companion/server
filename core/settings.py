@@ -163,16 +163,19 @@ SIMPLE_JWT = {
 DJOSER = {
     "SEND_ACTIVATION_EMAIL": True,
     "SEND_CONFIRMATION_EMAIL": True,
+    "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
     "ACTIVATION_URL": "api/auth/users/activation/{uid}/{token}",
     "PASSWORD_RESET_CONFIRM_URL": "api/auth/users/reset_password_confirm/{uid}/{token}",
     "EMAIL": {
         "activation": "authentication.emails.ActivationEmail",
         "password_reset": "authentication.emails.PasswordResetEmail",
         "confirmation": "authentication.emails.ConfirmationEmail",
+        "password_changed_confirmation": "authentication.emails.ConfirmationPasswordResetEmail",
     },
     "SERIALIZERS": {
         "user_create": "authentication.serializers.UserRegistrationSerializer",  # Custom serializer
     },
+    "PROTOCOL": "https",
 }
 
 # -----------------------------------------------------------------------------
@@ -186,13 +189,12 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
-# FRONTEND_URL = env("FRONTEND_URL")
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=5)
 
 # -----------------------------------------------------------------------------
 # Debug Toolbar
 # -----------------------------------------------------------------------------
-INTERNAL_IPS = ["127.0.0.1"]
+# INTERNAL_IPS = ["127.0.0.1"]
 
 # -----------------------------------------------------------------------------
 # OpenAPI and Documentation
@@ -217,3 +219,6 @@ UNFOLD = {
 # Default Primary Key Field Type
 # -----------------------------------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+APPEND_SLASH = True
