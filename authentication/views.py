@@ -1,7 +1,6 @@
 import threading
 
 import requests
-from django.http import HttpResponse
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
@@ -19,34 +18,16 @@ class ActivateAccountView(APIView):
         current_host = request.get_host()
         request.scheme = 'https' if request.is_secure() else 'http'
         activation_url = f"{request.scheme}://{current_host}/api/auth/users/activation/"
-        print(activation_url)
 
         def async_activation():
-            try:
-                response = requests.post(
-                    activation_url,
-                    json={'uid': uid, 'token': token},
-                    headers={'Content-Type': 'application/json'},
-                    timeout=(2, 8),  # Increased timeout for longer processing
-                    allow_redirects=True
-                )
-                print('Activation response received')
+            response = requests.post(
+                activation_url,
+                json={'uid': uid, 'token': token},
+                headers={'Content-Type': 'application/json'},
+                timeout=(2, 8),  # Increased timeout for longer processing
+                allow_redirects=True
+            )
 
-                try:
-                    response_data = response.json()
-                except ValueError:
-                    response_data = response.text
-
-                if response.status_code == 204:
-                    print('Account activated successfully')
-                else:
-                    print(f'Activation failed with response: {response_data}')
-            except requests.Timeout:
-                print('Activation request timed out')
-            except requests.RequestException as e:
-                print(f'Activation failed: {str(e)}')
-
-        # Start the activation process in a background thread
         thread = threading.Thread(target=async_activation)
         thread.start()
 
@@ -96,34 +77,20 @@ class ResetPasswordView(APIView):
         }
 
         def async_reset_password():
-            try:
-                response = requests.post(
-                    reset_password_url,
-                    json=payload,
-                    headers={'Content-Type': 'application/json'},
-                    timeout=(2, 8),  # Increased timeout for longer processing
-                    allow_redirects=True
-                )
-                if response.status_code == 204:
-                    print('Password reset successfully')
-                elif response.status_code == 400:
-                    try:
-                        response_data = response.json()
-                        error_message = response_data.get('token', ['Error resetting password'])[0]
-                        print(f'Password reset failed: {error_message}')
-                    except (ValueError, KeyError):
-                        print('Password reset failed with unknown error.')
-                else:
-                    print(f'Password reset failed with response: {response.content}')
-            except requests.RequestException as e:
-                print(f'Password reset failed: {str(e)}')
+            response = requests.post(
+                reset_password_url,
+                json=payload,
+                headers={'Content-Type': 'application/json'},
+                timeout=(2, 8),  # Increased timeout for longer processing
+                allow_redirects=True
+            )
 
         # Start the reset process in a background thread
         thread = threading.Thread(target=async_reset_password)
         thread.start()
 
         # Return an immediate response
-        return HttpResponse(
-            'Password reset request submitted. It will be processed shortly.',
-            status=202
+        return Response(
+            {'detail': 'Password reset request submitted. It will be processed shortly.', },
+            status=status.HTTP_202_ACCEPTED
         )

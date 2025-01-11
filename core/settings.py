@@ -163,12 +163,14 @@ SIMPLE_JWT = {
 DJOSER = {
     "SEND_ACTIVATION_EMAIL": True,
     "SEND_CONFIRMATION_EMAIL": True,
+    "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
     "ACTIVATION_URL": "api/auth/users/activation/{uid}/{token}",
     "PASSWORD_RESET_CONFIRM_URL": "api/auth/users/reset_password_confirm/{uid}/{token}",
     "EMAIL": {
         "activation": "authentication.emails.ActivationEmail",
         "password_reset": "authentication.emails.PasswordResetEmail",
         "confirmation": "authentication.emails.ConfirmationEmail",
+        "password_changed_confirmation": "authentication.emails.ConfirmationPasswordResetEmail",
     },
     "SERIALIZERS": {
         "user_create": "authentication.serializers.UserRegistrationSerializer",  # Custom serializer
@@ -188,7 +190,6 @@ EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=5)
-
 
 # -----------------------------------------------------------------------------
 # Debug Toolbar
@@ -218,22 +219,6 @@ UNFOLD = {
 # Default Primary Key Field Type
 # -----------------------------------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-    },
-}
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 APPEND_SLASH = True
