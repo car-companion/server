@@ -27,6 +27,3 @@ urlpatterns = [
     path('', include('authentication.urls')),
     path('__debug__/', include('debug_toolbar.urls')),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
