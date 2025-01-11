@@ -25,7 +25,7 @@ class ActivateAccountView(APIView):
                 activation_url,
                 json={'uid': uid, 'token': token},
                 headers={'Content-Type': 'application/json'},
-                timeout=(2, 8),
+                timeout=(30, 120),
                 allow_redirects=True
             )
             print('response is ready')
@@ -50,6 +50,8 @@ class ActivateAccountView(APIView):
             )
 
         except requests.Timeout:
+            print("****************************")
+            print()
             return Response(
                 {'detail': 'Activation request timed out'},
                 status=status.HTTP_504_GATEWAY_TIMEOUT
