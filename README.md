@@ -84,6 +84,8 @@ EMAIL_HOST=smtp
 EMAIL_PORT=25
 EMAIL_USE_TLS=False
 EMAIL_USE_SSL=False
+EMAIL_HOST_USER=yourEmailAddress
+EMAIL_HOST_PASSWORD=passwordOfYourEmail
 DEFAULT_FROM_EMAIL=noreply@carcompanion.com
 ```
 
