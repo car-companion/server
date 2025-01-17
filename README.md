@@ -61,9 +61,8 @@ git clone https://github.com/car-companion/server.git
 cd server
 ```
 
-2. Create a `.env` file in the docker folder using the provided template:
+2. Create a `.env` file in the project root using the provided template:
 
-```bash cd docker```
 ```env
 # Django settings
 SECRET_KEY=your-secret-key
@@ -84,6 +83,8 @@ EMAIL_HOST=smtp
 EMAIL_PORT=25
 EMAIL_USE_TLS=False
 EMAIL_USE_SSL=False
+EMAIL_HOST_USER=yourEmailAddress
+EMAIL_HOST_PASSWORD=passwordOfYourEmail
 DEFAULT_FROM_EMAIL=noreply@carcompanion.com
 ```
 
