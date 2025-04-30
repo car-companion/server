@@ -88,7 +88,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'car-companion'
+          app-name: 'carcompanion-app'
           slot-name: 'production'
           publish-profile: ${{ secrets.AzureAppService_PublishProfile_Main }}
 
